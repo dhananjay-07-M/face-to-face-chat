@@ -1,5 +1,5 @@
 // ===================================================
-// SCRIPT.JS: APPLICATION LOGIC (FINAL FEATURE SET)
+// SCRIPT.JS: APPLICATION LOGIC (FINAL CORRECTED VERSION)
 // ===================================================
 
 // -------------------
@@ -58,7 +58,6 @@ const leaveCallButton = document.getElementById('leave-call');
 const roomDisplay = document.getElementById('room-display');
 const onlineUsersList = document.getElementById('online-users-list');
 
-// Helper function to create a unique ID for this user/session
 function generateRandomId() {
     return 'user_' + Math.random().toString(36).substr(2, 9);
 }
@@ -126,9 +125,9 @@ async function initializeVideo() {
         // HANDLE INCOMING DATA (CHAT/FILE) CONNECTIONS
         peer.on('connection', (conn) => {
             console.log('Incoming data connection from:', conn.peer);
-            setupDataConnectionListeners(conn);
-            // Store the data connection
+            // CRITICAL: Immediately store the incoming connection object
             connections[conn.peer] = { ...connections[conn.peer], data: conn };
+            setupDataConnectionListeners(conn);
         });
         
         peer.on('error', (err) => {
@@ -169,13 +168,17 @@ function connectToPeer(remotePeerId) {
 
     const conn = peer.connect(remotePeerId, { reliable: true });
     
+    // !!! CRITICAL FIX FOR CHAT: Store the connection object immediately !!!
+    connections[remotePeerId] = { ...connections[remotePeerId], data: conn };
+    
     conn.on('open', () => {
         console.log('Data connection opened with:', remotePeerId);
         setupDataConnectionListeners(conn);
     });
-
-    // Store the data connection
-    connections[remotePeerId] = { ...connections[remotePeerId], data: conn };
+    
+    conn.on('error', (err) => {
+        console.error('Data connection error:', err);
+    });
 }
 
 
@@ -185,7 +188,7 @@ function connectToPeer(remotePeerId) {
 
 function addVideoStream(id, stream) {
     let video = document.getElementById(`remote-${id}`);
-    if (video) return; // Video already exists
+    if (video) return; 
     
     video = document.createElement('video');
     video.srcObject = stream;
@@ -193,7 +196,6 @@ function addVideoStream(id, stream) {
     video.playsinline = true; 
     video.id = `remote-${id}`;
     
-    // Attempt to play immediately (crucial for some mobile browsers)
     video.onloadedmetadata = () => {
         video.play().catch(e => console.log('Video play failed:', e));
     };
@@ -206,7 +208,6 @@ function removeVideoStream(id) {
     if (videoElement) {
         videoElement.remove();
     }
-    // Note: We don't delete the entire entry in connections as the data connection might still be active
     if (connections[id]) {
         delete connections[id].media;
     }
@@ -216,7 +217,6 @@ function removeVideoStream(id) {
 // 4. TEXT CHAT & FILE TRANSFER (PeerJS DataChannel)
 // -------------------
 
-// Function to send a chat message to ALL connected peers
 function sendChatMessage(messageText) {
     const message = { type: 'chat', user: DISPLAY_NAME, text: messageText };
     
@@ -225,48 +225,44 @@ function sendChatMessage(messageText) {
 
     // Send to all connected peers
     Object.values(connections).forEach(conn => {
-        if (conn.data && conn.data.open) {
+        // Chat sends if the connection exists AND is open
+        if (conn.data && conn.data.open) { 
             conn.data.send(message);
+        } else if (conn.data && !conn.data.open) {
+            console.warn(`Data channel to ${conn.data.peer} is not yet open.`);
         }
     });
 }
 
-// Function to handle incoming messages/data
 function setupDataConnectionListeners(conn) {
     conn.on('data', (data) => {
         switch(data.type) {
             case 'chat':
-                // Received chat message
                 displayMessage(data.user, data.text, false);
                 break;
             case 'file_meta':
-                // Received file metadata (name, size)
                 handleFileMeta(data, conn);
                 break;
             case 'file_chunk':
-                // Received a chunk of file data
                 handleFileChunk(data);
                 break;
         }
     });
     conn.on('close', () => {
         console.log('Data connection closed with:', conn.peer);
-        // Note: The media connection listener handles video removal
     });
     conn.on('error', (err) => {
         console.error('Data connection error:', err);
     });
 }
 
-// Function to display a message on the screen
 function displayMessage(user, text, isMyMessage) {
     const messageElement = document.createElement('div');
-    messageElement.textContent = `${user}: ${text}`;
+    messageElement.innerHTML = `${user}: ${text}`; // Use innerHTML to allow download links
     
     messageElement.className = isMyMessage ? 'my-message' : 'remote-message';
     
     messagesContainer.appendChild(messageElement);
-    // Auto-scroll to the latest message
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
 }
 
@@ -276,25 +272,17 @@ if (messageForm) {
         e.preventDefault();
         const messageText = messageInput.value.trim();
         if (messageText) {
-            // FIX: Use PeerJS DataChannel instead of Firebase push
             sendChatMessage(messageText); 
             messageInput.value = '';
         }
     });
 }
 
-// !!! FIX: Remove Firebase chat listener to disable history !!!
-// if (chatRef) {
-//     chatRef.on('child_added', (snapshot) => { /* Removed history logic */ });
-// }
-
-
 // -------------------
 // 5. FILE TRANSFER LOGIC
 // -------------------
-// Simplified file transfer using DataChannel
 
-const receivedFiles = {}; // Stores incomplete file data
+const receivedFiles = {}; 
 
 document.addEventListener('DOMContentLoaded', () => {
     // Add file icon button
@@ -304,23 +292,30 @@ document.addEventListener('DOMContentLoaded', () => {
     sendFileBtn.title = 'Send File';
     sendFileBtn.innerHTML = '<i class="fas fa-file-upload"></i>';
     
-    const leaveBtn = document.getElementById('leave-call');
-    leaveBtn.parentNode.insertBefore(sendFileBtn, leaveBtn);
+    // Insert file button next to the Send Message button
+    const submitBtn = messageForm.querySelector('button[type="submit"]');
+    if (submitBtn) {
+        submitBtn.parentNode.insertBefore(sendFileBtn, submitBtn.nextSibling);
+    } else {
+        // Fallback if submit button isn't found
+        const leaveBtn = document.getElementById('leave-call');
+        if(leaveBtn) leaveBtn.parentNode.insertBefore(sendFileBtn, leaveBtn);
+    }
 
-    sendFileBtn.addEventListener('click', () => {
+    sendFileBtn.addEventListener('click', (e) => {
+        e.preventDefault(); // Prevent form submission
         fileInput.click();
     });
 
     fileInput.addEventListener('change', sendFile);
 });
 
-const CHUNK_SIZE = 16000; // Chunk size for file transfer
+const CHUNK_SIZE = 16000; 
 
 function sendFile() {
     const file = fileInput.files[0];
     if (!file) return;
 
-    // 1. Send file metadata
     const fileMeta = {
         type: 'file_meta',
         name: file.name,
@@ -335,7 +330,6 @@ function sendFile() {
         }
     });
 
-    // 2. Send file chunks
     const reader = new FileReader();
     let offset = 0;
 
@@ -375,7 +369,7 @@ function handleFileMeta(meta, conn) {
         data: [],
         meta: meta,
         receivedSize: 0,
-        conn: conn // Store the connection that sent it
+        conn: conn 
     };
     displayMessage("System", `Incoming file from ${meta.peerId}: ${meta.name} (${(meta.size/1024/1024).toFixed(2)} MB)`, false);
 }
@@ -390,7 +384,6 @@ function handleFileChunk(chunkData) {
     file.receivedSize += chunkData.chunk.byteLength;
 
     if (file.receivedSize === file.meta.size) {
-        // All chunks received
         const blob = new Blob(file.data, { type: file.meta.mime });
         const url = URL.createObjectURL(blob);
         
@@ -405,7 +398,6 @@ function handleFileChunk(chunkData) {
 // 6. UI CONTROLS & CLEANUP
 // -------------------
 
-// Listen for users joining/leaving to update the sidebar
 if (onlineUsersRef && onlineUsersList) {
     onlineUsersList.innerHTML = '';
     
@@ -416,7 +408,6 @@ if (onlineUsersRef && onlineUsersList) {
         userElement.textContent = `🟢 ${user.name} (${user.peerId === myPeerId ? 'You' : 'Online'})`;
         onlineUsersList.appendChild(userElement);
         
-        // When a user joins, call them immediately (ensures multi-user video)
         if (user.peerId !== myPeerId && localStream) {
             callPeer(user.peerId, localStream);
             connectToPeer(user.peerId);
@@ -431,7 +422,6 @@ if (onlineUsersRef && onlineUsersList) {
         }
         removeVideoStream(peerId);
         
-        // Clean up connections object
         if (connections[peerId]) {
             if (connections[peerId].media) connections[peerId].media.close();
             if (connections[peerId].data) connections[peerId].data.close();
@@ -439,8 +429,6 @@ if (onlineUsersRef && onlineUsersList) {
         }
     });
 }
-
-// ... (Mic, Video, Leave buttons remain the same) ...
 
 micToggle.addEventListener('click', () => {
     if (!localStream) return;
@@ -459,7 +447,6 @@ videoToggle.addEventListener('click', () => {
 });
 
 leaveCallButton.addEventListener('click', () => {
-    // Close all connections and remove self from Firebase
     Object.values(connections).forEach(c => {
         if (c.media) c.media.close();
         if (c.data) c.data.close();
@@ -475,7 +462,6 @@ leaveCallButton.addEventListener('click', () => {
 });
 
 
-// Start the application when the page loads
 window.onload = () => {
     if (document.getElementById('app-container')) {
         initializeVideo();
