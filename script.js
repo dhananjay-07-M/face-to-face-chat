@@ -1,5 +1,5 @@
 // ===================================================
-// SCRIPT.JS: APPLICATION LOGIC (FINAL, DEBUGGED VERSION)
+// SCRIPT.JS: APPLICATION LOGIC (FINAL VERSION)
 // ===================================================
 
 // -------------------
@@ -15,15 +15,7 @@ const firebaseConfig = {
     appId: "1:319061629483:web:6c2d52351a764662a6286e"
 };
 
-// PeerJS Configuration with STUN Servers (Essential for cross-network/mobile connections)
-const peerConfig = {
-    iceServers: [
-        { urls: 'stun:stun.l.google.com:19302' },
-        { urls: 'stun:stun1.l.google.com:19302' },
-        { urls: 'stun:stun.services.mozilla.com' }
-    ]
-};
-
+// Initialize Firebase
 let database, chatRef, onlineUsersRef;
 const ROOM_NAME = 'Lobby'; 
 let DISPLAY_NAME = "Guest"; 
@@ -42,9 +34,6 @@ let localStream;
 let peer;
 let myPeerId;
 const connections = {}; 
-const fileInput = document.createElement('input'); 
-fileInput.type = 'file';
-fileInput.style.display = 'none';
 
 // DOM Elements
 const localVideo = document.getElementById('local-video');
@@ -58,6 +47,7 @@ const leaveCallButton = document.getElementById('leave-call');
 const roomDisplay = document.getElementById('room-display');
 const onlineUsersList = document.getElementById('online-users-list');
 
+// Helper function to create a unique ID for this user/session
 function generateRandomId() {
     return 'user_' + Math.random().toString(36).substr(2, 9);
 }
@@ -67,6 +57,7 @@ function generateRandomId() {
 // -------------------
 
 async function initializeVideo() {
+    // 1. Prompt user for unique name
     const userName = prompt("Welcome! Please enter your display name:");
     if (userName && userName.trim() !== "") {
         DISPLAY_NAME = userName.trim();
@@ -77,36 +68,48 @@ async function initializeVideo() {
     roomDisplay.textContent = `Room: ${ROOM_NAME}`;
 
     try {
+        // Get local media
         localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
         localVideo.srcObject = localStream;
 
+        // 2. PeerJS Configuration with STUN Servers (Fixes NAT Traversal/Mobile issues)
+        const peerConfig = {
+            iceServers: [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:stun1.l.google.com:19302' },
+                { urls: 'stun:stun.services.mozilla.com' }
+            ]
+        };
+        
         myPeerId = generateRandomId();
+        // Initialize PeerJS with the robust configuration
         peer = new Peer(myPeerId, peerConfig); 
         
         peer.on('open', (id) => {
             console.log('My Peer ID is: ' + id);
             
+            // A. Post user online status/ID to Firebase
             if (onlineUsersRef) {
                 const userRef = onlineUsersRef.child(id);
                 userRef.set({ name: DISPLAY_NAME, peerId: id });
+                
                 userRef.onDisconnect().remove();
                 
-                // CALL ALL EXISTING USERS IN THE ROOM
+                // B. Call other users already in the room
                 onlineUsersRef.once('value', (snapshot) => {
                     snapshot.forEach((childSnapshot) => {
                         const remoteUser = childSnapshot.val();
                         if (remoteUser.peerId !== id) {
                             callPeer(remoteUser.peerId, localStream);
-                            connectToPeer(remoteUser.peerId);
                         }
                     });
                 });
             }
         });
 
-        // HANDLE INCOMING MEDIA (VIDEO/AUDIO) CALLS
+        // 3. Handle incoming calls
         peer.on('call', (call) => {
-            console.log('Incoming media call from:', call.peer);
+            console.log('Incoming call from:', call.peer);
             call.answer(localStream);
             
             call.on('stream', (remoteStream) => {
@@ -117,15 +120,7 @@ async function initializeVideo() {
                 removeVideoStream(call.peer);
             });
             
-            connections[call.peer] = { ...connections[call.peer], media: call };
-        });
-
-        // HANDLE INCOMING DATA (CHAT/FILE) CONNECTIONS
-        peer.on('connection', (conn) => {
-            console.log('Incoming data connection from:', conn.peer);
-            // CRITICAL: Immediately store the incoming connection object
-            connections[conn.peer] = { ...connections[conn.peer], data: conn };
-            setupDataConnectionListeners(conn);
+            connections[call.peer] = call;
         });
         
         peer.on('error', (err) => {
@@ -140,68 +135,37 @@ async function initializeVideo() {
     }
 }
 
-// Function to establish both Media and Data connections
+// Function to call a remote peer
 function callPeer(remotePeerId, stream) {
-    // 1. Establish Media Connection (Video)
-    const mediaCall = peer.call(remotePeerId, stream);
+    if (connections[remotePeerId]) return;
+
+    console.log('Calling peer:', remotePeerId);
+    const call = peer.call(remotePeerId, stream);
     
-    mediaCall.on('stream', (remoteStream) => {
-        addVideoStream(mediaCall.peer, remoteStream);
+    call.on('stream', (remoteStream) => {
+        addVideoStream(call.peer, remoteStream);
     });
     
-    mediaCall.on('close', () => {
-        removeVideoStream(mediaCall.peer);
+    call.on('close', () => {
+        removeVideoStream(call.peer);
     });
-    
-    connections[remotePeerId] = { ...connections[remotePeerId], media: mediaCall };
-    
-    // 2. Establish Data Connection (Chat/Files)
-    connectToPeer(remotePeerId);
+
+    connections[remotePeerId] = call;
 }
 
-function connectToPeer(remotePeerId) {
-    // If DataConnection already exists, don't create a new one
-    if (connections[remotePeerId] && connections[remotePeerId].data) return; 
-
-    const conn = peer.connect(remotePeerId, { reliable: true });
-    
-    // CRITICAL FIX: Store the connection object immediately for chat stability
-    connections[remotePeerId] = { ...connections[remotePeerId], data: conn };
-    
-    conn.on('open', () => {
-        console.log('Data connection opened with:', remotePeerId);
-        setupDataConnectionListeners(conn);
-    });
-    
-    conn.on('error', (err) => {
-        console.error('Data connection error:', err);
-    });
-}
-
-
-// -------------------
-// 3. VIDEO RENDERING & STREAM MANAGEMENT (FIXED FOR BLACK SCREEN)
-// -------------------
-
+// Function to add a video stream to the DOM
 function addVideoStream(id, stream) {
-    let video = document.getElementById(`remote-${id}`);
+    if (document.getElementById(`remote-${id}`)) return;
     
-    // FIX: If video element exists, remove it first to ensure a clean stream re-attachment/render
-    if (video) {
-        video.remove();
-        console.log(`Re-rendering stream for: ${id}`);
-    } else {
-        console.log(`Adding new stream for: ${id}`);
-    }
-    
-    // Create and configure the new video element
-    video = document.createElement('video');
+    const video = document.createElement('video');
     video.srcObject = stream;
+    // CRITICAL: Ensure video is set to play on mobile
     video.autoplay = true;
     video.playsinline = true; 
+    
     video.id = `remote-${id}`;
     
-    // Set up the event listener for playback (CRUCIAL for mobile/browsers)
+    // Attempt to play immediately (sometimes required by some browsers)
     video.onloadedmetadata = () => {
         video.play().catch(e => console.log('Video play failed:', e));
     };
@@ -209,204 +173,53 @@ function addVideoStream(id, stream) {
     videoGrid.append(video);
 }
 
+// Function to remove a video stream from the DOM
 function removeVideoStream(id) {
     const videoElement = document.getElementById(`remote-${id}`);
     if (videoElement) {
         videoElement.remove();
-    }
-    if (connections[id]) {
-        delete connections[id].media;
+        delete connections[id];
     }
 }
 
 // -------------------
-// 4. TEXT CHAT & FILE TRANSFER (PeerJS DataChannel)
+// 3. TEXT CHAT & UI CONTROLS
 // -------------------
 
-function sendChatMessage(messageText) {
-    const message = { type: 'chat', user: DISPLAY_NAME, text: messageText };
-    
-    // Display my own message locally
-    displayMessage(message.user, message.text, true); 
-
-    // Send to all connected peers
-    Object.values(connections).forEach(conn => {
-        // Chat sends if the connection exists AND is open
-        if (conn.data && conn.data.open) { 
-            conn.data.send(message);
-        } else if (conn.data && !conn.data.open) {
-            console.warn(`Data channel to ${conn.data.peer} is not yet open.`);
-        }
-    });
-}
-
-function setupDataConnectionListeners(conn) {
-    conn.on('data', (data) => {
-        switch(data.type) {
-            case 'chat':
-                displayMessage(data.user, data.text, false);
-                break;
-            case 'file_meta':
-                handleFileMeta(data, conn);
-                break;
-            case 'file_chunk':
-                handleFileChunk(data);
-                break;
-        }
-    });
-    conn.on('close', () => {
-        console.log('Data connection closed with:', conn.peer);
-    });
-    conn.on('error', (err) => {
-        console.error('Data connection error:', err);
-    });
-}
-
-// FIX: This function uses innerHTML to render the download link correctly
-function displayMessage(user, text, isMyMessage) {
-    const messageElement = document.createElement('div');
-    // CRITICAL FIX: Use innerHTML to allow HTML tags (like <a>) to render
-    messageElement.innerHTML = `<b>${user}</b>: ${text}`; 
-    
-    messageElement.className = isMyMessage ? 'my-message' : 'remote-message';
-    
-    messagesContainer.appendChild(messageElement);
-    messagesContainer.scrollTop = messagesContainer.scrollHeight;
-}
-
-// --- Chat Input Fix and Submission ---
+// Text Chat Submission
 if (messageForm) {
     messageForm.addEventListener('submit', (e) => {
         e.preventDefault();
         const messageText = messageInput.value.trim();
-        if (messageText) {
-            sendChatMessage(messageText); 
+        if (messageText && chatRef) {
+            chatRef.push({
+                user: DISPLAY_NAME, 
+                text: messageText,
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            });
             messageInput.value = '';
         }
     });
 }
 
-// -------------------
-// 5. FILE TRANSFER LOGIC
-// -------------------
-
-const receivedFiles = {}; 
-
-document.addEventListener('DOMContentLoaded', () => {
-    // Add file icon button
-    const sendFileBtn = document.createElement('button');
-    sendFileBtn.id = 'send-file-btn';
-    sendFileBtn.className = 'control-btn';
-    sendFileBtn.title = 'Send File';
-    sendFileBtn.innerHTML = '<i class="fas fa-file-upload"></i>';
-    
-    // Insert file button next to the Send Message button
-    const submitBtn = messageForm.querySelector('button[type="submit"]');
-    if (submitBtn) {
-        submitBtn.parentNode.insertBefore(sendFileBtn, submitBtn.nextSibling);
-    } else {
-        const leaveBtn = document.getElementById('leave-call');
-        if(leaveBtn) leaveBtn.parentNode.insertBefore(sendFileBtn, leaveBtn);
-    }
-
-    sendFileBtn.addEventListener('click', (e) => {
-        e.preventDefault(); 
-        fileInput.click();
-    });
-
-    fileInput.addEventListener('change', sendFile);
-});
-
-const CHUNK_SIZE = 16000; 
-
-function sendFile() {
-    const file = fileInput.files[0];
-    if (!file) return;
-
-    const fileMeta = {
-        type: 'file_meta',
-        name: file.name,
-        size: file.size,
-        peerId: myPeerId,
-        mime: file.type || 'application/octet-stream'
-    };
-    
-    Object.values(connections).forEach(conn => {
-        if (conn.data && conn.data.open) {
-            conn.data.send(fileMeta);
-        }
-    });
-
-    const reader = new FileReader();
-    let offset = 0;
-
-    reader.onload = (e) => {
-        const chunk = e.target.result;
-        Object.values(connections).forEach(conn => {
-            if (conn.data && conn.data.open) {
-                conn.data.send({
-                    type: 'file_chunk',
-                    peerId: myPeerId,
-                    chunk: chunk,
-                    offset: offset
-                });
-            }
-        });
-        offset += chunk.byteLength;
-        if (offset < file.size) {
-            readNextChunk();
-        } else {
-            console.log("File transfer complete!");
-            displayMessage(DISPLAY_NAME, `File sent: ${file.name} (${(file.size/1024/1024).toFixed(2)} MB)`, true);
-        }
-    };
-
-    const readNextChunk = () => {
-        const chunk = file.slice(offset, offset + CHUNK_SIZE);
-        reader.readAsArrayBuffer(chunk);
-    };
-
-    readNextChunk();
-}
-
-
-function handleFileMeta(meta, conn) {
-    const fileId = `${meta.peerId}-${meta.name}`;
-    receivedFiles[fileId] = {
-        data: [],
-        meta: meta,
-        receivedSize: 0,
-        conn: conn 
-    };
-    displayMessage("System", `Incoming file from ${meta.peerId}: ${meta.name} (${(meta.size/1024/1024).toFixed(2)} MB)`, false);
-}
-
-function handleFileChunk(chunkData) {
-    const fileId = `${chunkData.peerId}-${receivedFiles[`${chunkData.peerId}-${receivedFiles}`]?.meta.name}`;
-    const file = receivedFiles[fileId];
-
-    if (!file) return;
-
-    file.data.push(chunkData.chunk);
-    file.receivedSize += chunkData.chunk.byteLength;
-
-    if (file.receivedSize === file.meta.size) {
-        const blob = new Blob(file.data, { type: file.meta.mime });
-        const url = URL.createObjectURL(blob);
+// Listen for new messages from Firebase
+if (chatRef) {
+    chatRef.on('child_added', (snapshot) => {
+        const message = snapshot.val();
         
-        // Final message with the download link
-        const downloadLink = `<a href="${url}" download="${file.meta.name}" target="_blank">here</a>`;
-        displayMessage("System", `File received: ${file.meta.name}. Click ${downloadLink} to download.`, false);
+        const messageElement = document.createElement('div');
+        messageElement.textContent = `${message.user}: ${message.text}`;
         
-        delete receivedFiles[fileId];
-    }
+        const isMyMessage = (message.user === DISPLAY_NAME); 
+        
+        messageElement.className = isMyMessage ? 'my-message' : 'remote-message';
+        
+        messagesContainer.appendChild(messageElement);
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    });
 }
 
-
-// -------------------
-// 6. UI CONTROLS & CLEANUP
-// -------------------
-
+// Listen for users joining/leaving to update the sidebar
 if (onlineUsersRef && onlineUsersList) {
     onlineUsersList.innerHTML = '';
     
@@ -416,11 +229,6 @@ if (onlineUsersRef && onlineUsersList) {
         userElement.id = `user-${user.peerId}`;
         userElement.textContent = `🟢 ${user.name} (${user.peerId === myPeerId ? 'You' : 'Online'})`;
         onlineUsersList.appendChild(userElement);
-        
-        if (user.peerId !== myPeerId && localStream) {
-            callPeer(user.peerId, localStream);
-            connectToPeer(user.peerId);
-        }
     });
 
     onlineUsersRef.on('child_removed', (snapshot) => {
@@ -430,15 +238,11 @@ if (onlineUsersRef && onlineUsersList) {
             userElement.remove();
         }
         removeVideoStream(peerId);
-        
-        if (connections[peerId]) {
-            if (connections[peerId].media) connections[peerId].media.close();
-            if (connections[peerId].data) connections[peerId].data.close();
-            delete connections[peerId];
-        }
     });
 }
 
+
+// Mic and Video Toggles
 micToggle.addEventListener('click', () => {
     if (!localStream) return;
     const audioTrack = localStream.getAudioTracks()[0];
@@ -456,10 +260,7 @@ videoToggle.addEventListener('click', () => {
 });
 
 leaveCallButton.addEventListener('click', () => {
-    Object.values(connections).forEach(c => {
-        if (c.media) c.media.close();
-        if (c.data) c.data.close();
-    });
+    Object.values(connections).forEach(conn => conn.close());
     localStream.getTracks().forEach(track => track.stop());
     
     if (onlineUsersRef && myPeerId) {
@@ -471,6 +272,7 @@ leaveCallButton.addEventListener('click', () => {
 });
 
 
+// Start the application when the page loads
 window.onload = () => {
     if (document.getElementById('app-container')) {
         initializeVideo();
