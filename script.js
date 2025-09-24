@@ -1,11 +1,10 @@
 // ===================================================
-// SCRIPT.JS: APPLICATION LOGIC
+// SCRIPT.JS: APPLICATION LOGIC (FINAL VERSION)
 // ===================================================
 
 // -------------------
 // 1. CONFIGURATION
 // -------------------
-// NOTE: Your specific Firebase configuration is used here.
 const firebaseConfig = {
     apiKey: "AIzaSyDkrzN0604XsYRipUbPF9iiLXy8aaOji3o",
     authDomain: "dhananjay-chat-app.firebaseapp.com",
@@ -19,7 +18,6 @@ const firebaseConfig = {
 // Initialize Firebase
 let database, chatRef, onlineUsersRef;
 const ROOM_NAME = 'Lobby'; 
-// !!! FIX: Changed to 'let' for the name prompt !!!
 let DISPLAY_NAME = "Guest"; 
 
 if (typeof firebase !== 'undefined') {
@@ -28,7 +26,6 @@ if (typeof firebase !== 'undefined') {
     chatRef = database.ref('messages/' + ROOM_NAME);
     onlineUsersRef = database.ref('onlineUsers/' + ROOM_NAME);
 } else {
-    // This error means the Firebase SDK scripts are missing from dashboard.html
     console.error("Firebase SDK not loaded. Check your dashboard.html file.");
 }
 
@@ -60,25 +57,33 @@ function generateRandomId() {
 // -------------------
 
 async function initializeVideo() {
-    // !!! FIX: Prompt user for unique name here !!!
+    // 1. Prompt user for unique name
     const userName = prompt("Welcome! Please enter your display name:");
     if (userName && userName.trim() !== "") {
         DISPLAY_NAME = userName.trim();
     } else {
-        // Fallback for blank/cancelled prompt
         DISPLAY_NAME = "Guest_" + Math.floor(Math.random() * 1000);
     }
     
-    roomDisplay.textContent = `Room: ${ROOM_NAME}`; // Update the Room name display
+    roomDisplay.textContent = `Room: ${ROOM_NAME}`;
 
     try {
-        // 1. Get local media (mic and camera)
+        // Get local media
         localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
         localVideo.srcObject = localStream;
 
-        // 2. Initialize PeerJS
+        // 2. PeerJS Configuration with STUN Servers (Fixes NAT Traversal/Mobile issues)
+        const peerConfig = {
+            iceServers: [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:stun1.l.google.com:19302' },
+                { urls: 'stun:stun.services.mozilla.com' }
+            ]
+        };
+        
         myPeerId = generateRandomId();
-        peer = new Peer(myPeerId);
+        // Initialize PeerJS with the robust configuration
+        peer = new Peer(myPeerId, peerConfig); 
         
         peer.on('open', (id) => {
             console.log('My Peer ID is: ' + id);
@@ -86,10 +91,8 @@ async function initializeVideo() {
             // A. Post user online status/ID to Firebase
             if (onlineUsersRef) {
                 const userRef = onlineUsersRef.child(id);
-                // The DISPLAY_NAME variable now holds the user's chosen name
                 userRef.set({ name: DISPLAY_NAME, peerId: id });
                 
-                // Remove user from Firebase when they disconnect (page close/refresh)
                 userRef.onDisconnect().remove();
                 
                 // B. Call other users already in the room
@@ -156,10 +159,17 @@ function addVideoStream(id, stream) {
     
     const video = document.createElement('video');
     video.srcObject = stream;
+    // CRITICAL: Ensure video is set to play on mobile
     video.autoplay = true;
     video.playsinline = true; 
+    
     video.id = `remote-${id}`;
     
+    // Attempt to play immediately (sometimes required by some browsers)
+    video.onloadedmetadata = () => {
+        video.play().catch(e => console.log('Video play failed:', e));
+    };
+
     videoGrid.append(video);
 }
 
@@ -205,7 +215,6 @@ if (chatRef) {
         messageElement.className = isMyMessage ? 'my-message' : 'remote-message';
         
         messagesContainer.appendChild(messageElement);
-        // Auto-scroll to the latest message
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
     });
 }
@@ -218,7 +227,6 @@ if (onlineUsersRef && onlineUsersList) {
         const user = snapshot.val();
         const userElement = document.createElement('p');
         userElement.id = `user-${user.peerId}`;
-        // Use the dynamically set user name
         userElement.textContent = `🟢 ${user.name} (${user.peerId === myPeerId ? 'You' : 'Online'})`;
         onlineUsersList.appendChild(userElement);
     });
@@ -252,18 +260,15 @@ videoToggle.addEventListener('click', () => {
 });
 
 leaveCallButton.addEventListener('click', () => {
-    // 1. Close all active PeerJS connections
     Object.values(connections).forEach(conn => conn.close());
-    // 2. Stop all local media tracks
     localStream.getTracks().forEach(track => track.stop());
     
-    // 3. Clear user status from Firebase
     if (onlineUsersRef && myPeerId) {
          onlineUsersRef.child(myPeerId).remove();
     }
     
     alert('Call ended. Redirecting to home.');
-    window.location.href = 'index.html'; // Redirect to the portfolio page
+    window.location.href = 'index.html'; 
 });
 
 
