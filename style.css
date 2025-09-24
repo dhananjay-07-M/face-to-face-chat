@@ -152,10 +152,14 @@ body {
     background-color: #fff;
 }
 
-.about-photo-placeholder i {
-    font-size: 6em;
-    color: #ccc;
-    margin-bottom: 10px;
+/* I've added these rules for your professional photo */
+.profile-photo {
+    width: 200px; /* Set a fixed size for a consistent look */
+    height: 200px;
+    object-fit: cover; /* Ensures the image fills the space without stretching */
+    border-radius: 50%; /* This is what makes the photo a perfect circle */
+    border: 5px solid #007bff; /* Adds a professional border */
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); /* A nice shadow to make it stand out */
 }
 
 /* Footer */
@@ -313,6 +317,10 @@ footer {
     border-radius: 20px;
     margin-right: 10px;
     font-size: 1em;
+}
+
+#message-input:focus {
+    border-color: #007bff;
 }
 
 #message-form button {
