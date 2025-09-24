@@ -1,5 +1,5 @@
 // ===================================================
-// SCRIPT.JS: APPLICATION LOGIC (FINAL CORRECTED VERSION)
+// SCRIPT.JS: APPLICATION LOGIC (FINAL, DEBUGGED VERSION)
 // ===================================================
 
 // -------------------
@@ -15,7 +15,7 @@ const firebaseConfig = {
     appId: "1:319061629483:web:6c2d52351a764662a6286e"
 };
 
-// PeerJS Configuration with STUN Servers 
+// PeerJS Configuration with STUN Servers (Essential for cross-network/mobile connections)
 const peerConfig = {
     iceServers: [
         { urls: 'stun:stun.l.google.com:19302' },
@@ -165,7 +165,7 @@ function connectToPeer(remotePeerId) {
 
     const conn = peer.connect(remotePeerId, { reliable: true });
     
-    // !!! CRITICAL FIX FOR CHAT STABILITY: Store the connection object immediately !!!
+    // CRITICAL FIX: Store the connection object immediately for chat stability
     connections[remotePeerId] = { ...connections[remotePeerId], data: conn };
     
     conn.on('open', () => {
@@ -180,19 +180,28 @@ function connectToPeer(remotePeerId) {
 
 
 // -------------------
-// 3. VIDEO RENDERING & STREAM MANAGEMENT
+// 3. VIDEO RENDERING & STREAM MANAGEMENT (FIXED FOR BLACK SCREEN)
 // -------------------
 
 function addVideoStream(id, stream) {
     let video = document.getElementById(`remote-${id}`);
-    if (video) return; 
     
+    // FIX: If video element exists, remove it first to ensure a clean stream re-attachment/render
+    if (video) {
+        video.remove();
+        console.log(`Re-rendering stream for: ${id}`);
+    } else {
+        console.log(`Adding new stream for: ${id}`);
+    }
+    
+    // Create and configure the new video element
     video = document.createElement('video');
     video.srcObject = stream;
     video.autoplay = true;
     video.playsinline = true; 
     video.id = `remote-${id}`;
     
+    // Set up the event listener for playback (CRUCIAL for mobile/browsers)
     video.onloadedmetadata = () => {
         video.play().catch(e => console.log('Video play failed:', e));
     };
@@ -253,7 +262,7 @@ function setupDataConnectionListeners(conn) {
     });
 }
 
-// FIX: This function now uses innerHTML to render the download link correctly
+// FIX: This function uses innerHTML to render the download link correctly
 function displayMessage(user, text, isMyMessage) {
     const messageElement = document.createElement('div');
     // CRITICAL FIX: Use innerHTML to allow HTML tags (like <a>) to render
@@ -385,8 +394,9 @@ function handleFileChunk(chunkData) {
         const blob = new Blob(file.data, { type: file.meta.mime });
         const url = URL.createObjectURL(blob);
         
-        // The download link is generated here
-        displayMessage("System", `File received: ${file.meta.name}. Click <a href="${url}" download="${file.meta.name}" target="_blank">here</a> to download.`, false);
+        // Final message with the download link
+        const downloadLink = `<a href="${url}" download="${file.meta.name}" target="_blank">here</a>`;
+        displayMessage("System", `File received: ${file.meta.name}. Click ${downloadLink} to download.`, false);
         
         delete receivedFiles[fileId];
     }
