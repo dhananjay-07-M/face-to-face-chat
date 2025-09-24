@@ -5,8 +5,6 @@
 // -------------------
 // 1. CONFIGURATION
 // -------------------
-// It's a good practice to use environment variables for keys, but for this project,
-// we'll keep it simple by defining them directly.
 const firebaseConfig = {
     apiKey: "AIzaSyDkrzN0604XsYRipUbPF9iiLXy8aaOji3o",
     authDomain: "dhananjay-chat-app.firebaseapp.com",
@@ -31,7 +29,7 @@ let database, chatRef, onlineUsersRef;
 const ROOM_NAME = 'Lobby';
 let DISPLAY_NAME = "Guest";
 
-// Use a self-executing function to ensure Firebase is initialized correctly
+// Ensure Firebase is initialized
 (function() {
     if (typeof firebase !== 'undefined') {
         firebase.initializeApp(firebaseConfig);
@@ -40,7 +38,6 @@ let DISPLAY_NAME = "Guest";
         onlineUsersRef = database.ref('onlineUsers/' + ROOM_NAME);
     } else {
         console.error("Firebase SDK not loaded. Check your script tags.");
-        // A user-friendly alert could be added here if the app is critical
     }
 })();
 
@@ -94,17 +91,16 @@ async function initializeVideo() {
             userRef.set({ name: DISPLAY_NAME, peerId: id });
             try { userRef.onDisconnect().remove(); } catch (e){ console.error("onDisconnect failed:", e); }
 
-            // This is a key fix: We must re-establish connections with all active users
-            // when we come online. This fixes the issue where new users cannot see
-            // existing ones.
-            onlineUsersRef.once('value', snapshot => {
-                snapshot.forEach(child => {
-                    const remoteUser = child.val();
-                    if (remoteUser.peerId !== id) {
-                        callPeer(remoteUser.peerId, localStream);
-                        connectToPeer(remoteUser.peerId);
-                    }
-                });
+            // CRITICAL FIX: Use on('child_added') to listen for new users in real-time.
+            // This ensures that when a mobile user joins, all existing PC users see them,
+            // and the mobile user sees them as well.
+            onlineUsersRef.on('child_added', snapshot => {
+                const remoteUser = snapshot.val();
+                if (remoteUser.peerId !== id) {
+                    console.log(`New user detected: ${remoteUser.name}. Calling...`);
+                    callPeer(remoteUser.peerId, localStream);
+                    connectToPeer(remoteUser.peerId);
+                }
             });
         });
 
@@ -135,7 +131,6 @@ async function initializeVideo() {
 
     } catch (err) {
         console.error("Failed to get local stream:", err);
-        // Using a custom message box instead of alert()
         displayMessageBox('Cannot access camera/mic. Please ensure permissions are granted and try again.', 'error');
     }
 }
@@ -178,7 +173,7 @@ function addVideoStream(id, stream) {
     const video = document.createElement('video');
     video.srcObject = stream;
     video.autoplay = true;
-    video.playsInline = true;
+    video.playsInline = true; // IMPORTANT for iOS
     video.id = `remote-${id}`;
     video.muted = false;
 
