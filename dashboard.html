@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Face to Face Chat Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+</head>
+<body>
+
+    <nav class="navbar dashboard-nav">
+        <div class="nav-brand">Face to Face Chat</div>
+        <div class="nav-links">
+            <a href="index.html">← Back to Portfolio</a>
+            <span id="room-display">Room: Lobby</span>
+        </div>
+    </nav>
+
+    <div id="app-container">
+        
+        <div id="sidebar">
+            <h3>Online Users</h3>
+            <div id="online-users-list">
+                <p>Connecting...</p>
+            </div>
+        </div>
+        
+        <div id="main-content">
+            
+            <div id="video-grid">
+                <video id="local-video" muted autoplay playsinline></video>
+                </div>
+            
+            <div id="messages-container">
+                </div>
+            
+            <form id="message-form">
+                <input type="text" id="message-input" placeholder="Type your message here...">
+                <button type="submit" title="Send Message"><i class="fas fa-paper-plane"></i></button>
+                <button type="button" id="mic-toggle" class="control-btn" title="Toggle Mic"><i class="fas fa-microphone"></i></button>
+                <button type="button" id="video-toggle" class="control-btn" title="Toggle Video"><i class="fas fa-video"></i></button>
+                <button type="button" id="leave-call" class="control-btn end-call" title="End Call"><i class="fas fa-phone-slash"></i></button>
+            </form>
+            
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
