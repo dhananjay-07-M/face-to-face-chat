@@ -19,7 +19,8 @@ const firebaseConfig = {
 // Initialize Firebase
 let database, chatRef, onlineUsersRef;
 const ROOM_NAME = 'Lobby'; 
-const DISPLAY_NAME = "Dhananjay M";
+// !!! FIX: Changed to 'let' for the name prompt !!!
+let DISPLAY_NAME = "Guest"; 
 
 if (typeof firebase !== 'undefined') {
     firebase.initializeApp(firebaseConfig);
@@ -59,10 +60,19 @@ function generateRandomId() {
 // -------------------
 
 async function initializeVideo() {
-    roomDisplay.textContent = `Room: ${ROOM_NAME}`;
+    // !!! FIX: Prompt user for unique name here !!!
+    const userName = prompt("Welcome! Please enter your display name:");
+    if (userName && userName.trim() !== "") {
+        DISPLAY_NAME = userName.trim();
+    } else {
+        // Fallback for blank/cancelled prompt
+        DISPLAY_NAME = "Guest_" + Math.floor(Math.random() * 1000);
+    }
+    
+    roomDisplay.textContent = `Room: ${ROOM_NAME}`; // Update the Room name display
 
     try {
-        // 1. Get local media (mic and camera) - AUDIO IS INCLUDED HERE!
+        // 1. Get local media (mic and camera)
         localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
         localVideo.srcObject = localStream;
 
@@ -76,6 +86,7 @@ async function initializeVideo() {
             // A. Post user online status/ID to Firebase
             if (onlineUsersRef) {
                 const userRef = onlineUsersRef.child(id);
+                // The DISPLAY_NAME variable now holds the user's chosen name
                 userRef.set({ name: DISPLAY_NAME, peerId: id });
                 
                 // Remove user from Firebase when they disconnect (page close/refresh)
@@ -207,6 +218,7 @@ if (onlineUsersRef && onlineUsersList) {
         const user = snapshot.val();
         const userElement = document.createElement('p');
         userElement.id = `user-${user.peerId}`;
+        // Use the dynamically set user name
         userElement.textContent = `🟢 ${user.name} (${user.peerId === myPeerId ? 'You' : 'Online'})`;
         onlineUsersList.appendChild(userElement);
     });
