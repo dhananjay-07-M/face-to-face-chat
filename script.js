@@ -15,7 +15,7 @@ const firebaseConfig = {
     appId: "1:319061629483:web:6c2d52351a764662a6286e"
 };
 
-// PeerJS Configuration with STUN Servers (Essential for cross-network/mobile connections)
+// PeerJS Configuration with STUN Servers 
 const peerConfig = {
     iceServers: [
         { urls: 'stun:stun.l.google.com:19302' },
@@ -41,8 +41,8 @@ if (typeof firebase !== 'undefined') {
 let localStream;
 let peer;
 let myPeerId;
-const connections = {}; // Stores both MediaConnection (video) and DataConnection (chat/files)
-const fileInput = document.createElement('input'); // File input element
+const connections = {}; 
+const fileInput = document.createElement('input'); 
 fileInput.type = 'file';
 fileInput.style.display = 'none';
 
@@ -97,7 +97,6 @@ async function initializeVideo() {
                         const remoteUser = childSnapshot.val();
                         if (remoteUser.peerId !== id) {
                             callPeer(remoteUser.peerId, localStream);
-                            // Establish Data Connection for Chat/File Transfer
                             connectToPeer(remoteUser.peerId);
                         }
                     });
@@ -118,7 +117,6 @@ async function initializeVideo() {
                 removeVideoStream(call.peer);
             });
             
-            // Store the media connection
             connections[call.peer] = { ...connections[call.peer], media: call };
         });
 
@@ -155,7 +153,6 @@ function callPeer(remotePeerId, stream) {
         removeVideoStream(mediaCall.peer);
     });
     
-    // Store the media connection
     connections[remotePeerId] = { ...connections[remotePeerId], media: mediaCall };
     
     // 2. Establish Data Connection (Chat/Files)
@@ -168,7 +165,7 @@ function connectToPeer(remotePeerId) {
 
     const conn = peer.connect(remotePeerId, { reliable: true });
     
-    // !!! CRITICAL FIX FOR CHAT: Store the connection object immediately !!!
+    // !!! CRITICAL FIX FOR CHAT STABILITY: Store the connection object immediately !!!
     connections[remotePeerId] = { ...connections[remotePeerId], data: conn };
     
     conn.on('open', () => {
@@ -256,9 +253,11 @@ function setupDataConnectionListeners(conn) {
     });
 }
 
+// FIX: This function now uses innerHTML to render the download link correctly
 function displayMessage(user, text, isMyMessage) {
     const messageElement = document.createElement('div');
-    messageElement.innerHTML = `${user}: ${text}`; // Use innerHTML to allow download links
+    // CRITICAL FIX: Use innerHTML to allow HTML tags (like <a>) to render
+    messageElement.innerHTML = `<b>${user}</b>: ${text}`; 
     
     messageElement.className = isMyMessage ? 'my-message' : 'remote-message';
     
@@ -297,13 +296,12 @@ document.addEventListener('DOMContentLoaded', () => {
     if (submitBtn) {
         submitBtn.parentNode.insertBefore(sendFileBtn, submitBtn.nextSibling);
     } else {
-        // Fallback if submit button isn't found
         const leaveBtn = document.getElementById('leave-call');
         if(leaveBtn) leaveBtn.parentNode.insertBefore(sendFileBtn, leaveBtn);
     }
 
     sendFileBtn.addEventListener('click', (e) => {
-        e.preventDefault(); // Prevent form submission
+        e.preventDefault(); 
         fileInput.click();
     });
 
@@ -387,6 +385,7 @@ function handleFileChunk(chunkData) {
         const blob = new Blob(file.data, { type: file.meta.mime });
         const url = URL.createObjectURL(blob);
         
+        // The download link is generated here
         displayMessage("System", `File received: ${file.meta.name}. Click <a href="${url}" download="${file.meta.name}" target="_blank">here</a> to download.`, false);
         
         delete receivedFiles[fileId];
