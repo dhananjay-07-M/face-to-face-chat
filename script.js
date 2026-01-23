@@ -251,3 +251,107 @@ leaveCall.onclick = () => {
     onlineUsersRef.child(myPeerId).remove();
     location.reload();
 };
+// ===============================
+// FINAL SCRIPT.JS PART 2
+// Image + File Transfer + Download + Back Handling
+// ===============================
+
+// ---------- FILE BUTTON ----------
+fileBtn.onclick = () => fileInput.click();
+
+fileInput.onchange = () => {
+    const file = fileInput.files[0];
+    if (!file) return;
+
+    // IMAGE PREVIEW
+    if (file.type.startsWith("image/")) {
+        const reader = new FileReader();
+        reader.onload = e => {
+            Object.values(connections).forEach(c =>
+                c.data?.send({
+                    type: "image",
+                    user: DISPLAY_NAME,
+                    dataURL: e.target.result
+                })
+            );
+            displayMessage(DISPLAY_NAME, "[Image Sent]", true);
+        };
+        reader.readAsDataURL(file);
+    }
+
+    // FILE META
+    const meta = {
+        type: "file_meta",
+        name: file.name,
+        size: file.size,
+        mime: file.type,
+        sender: DISPLAY_NAME,
+        peerId: myPeerId
+    };
+
+    Object.values(connections).forEach(c => c.data?.send(meta));
+
+    const reader = new FileReader();
+    let offset = 0;
+
+    reader.onload = e => {
+        Object.values(connections).forEach(c =>
+            c.data?.send({
+                type: "file_chunk",
+                peerId: myPeerId,
+                chunk: e.target.result
+            })
+        );
+
+        offset += e.target.result.byteLength;
+        if (offset < file.size) readNextChunk();
+    };
+
+    function readNextChunk() {
+        const slice = file.slice(offset, offset + CHUNK_SIZE);
+        reader.readAsArrayBuffer(slice);
+    }
+
+    readNextChunk();
+};
+
+// ---------- RECEIVE FILE ----------
+function handleIncomingFile(data) {
+    receivedFiles[data.peerId] = { ...data, chunks: [], received: 0 };
+}
+
+function handleIncomingChunk(data) {
+    const file = receivedFiles[data.peerId];
+    file.chunks.push(data.chunk);
+    file.received += data.chunk.byteLength;
+
+    if (file.received >= file.size) {
+        const blob = new Blob(file.chunks, { type: file.mime });
+        const url = URL.createObjectURL(blob);
+
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = file.name;
+        link.innerText = "⬇ Download " + file.name;
+        link.style.color = "#38bdf8";
+
+        const div = document.createElement("div");
+        div.appendChild(link);
+        messagesContainer.appendChild(div);
+
+        delete receivedFiles[data.peerId];
+    }
+}
+
+// ---------- BACK BUTTON SUPPORT ----------
+window.onpopstate = () => {
+    location.reload(); // shows join screen again
+};
+
+// ---------- EXIT CLEANUP ----------
+leaveCall.onclick = () => {
+    onlineUsersRef.child(myPeerId).remove();
+    if (peer) peer.destroy();
+    location.reload();
+};
+
