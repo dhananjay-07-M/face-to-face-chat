@@ -1,9 +1,10 @@
 * {
     box-sizing: border-box;
+    margin: 0;
+    padding: 0;
 }
 
 body {
-    margin: 0;
     font-family: "Segoe UI", Arial, sans-serif;
     background: #0b1120;
     color: #ffffff;
@@ -16,7 +17,7 @@ body {
     justify-content: space-between;
     align-items: center;
     padding: 14px 30px;
-    background: rgba(0,0,0,0.6);
+    background: rgba(0,0,0,0.7);
     position: sticky;
     top: 0;
     z-index: 10;
@@ -39,12 +40,11 @@ body {
     border-radius: 6px;
 }
 
-/* ---------------- HERO ---------------- */
+/* ---------------- HERO SECTION ---------------- */
 
 #hero-section {
-    height: 90vh;
-    background-size: cover;
-    background-position: center;
+    height: 100vh;
+    background: url("assets/images/hero-bg.jpg") no-repeat center center / cover;
     position: relative;
 }
 
@@ -68,12 +68,16 @@ body {
 
 .hero-content h1 {
     font-size: 48px;
-    margin: 0;
 }
 
 .hero-content h2 {
     margin-top: 10px;
     font-weight: normal;
+}
+
+.tagline {
+    margin-top: 10px;
+    opacity: 0.9;
 }
 
 .cta-button {
