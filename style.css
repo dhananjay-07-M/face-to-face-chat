@@ -10,7 +10,7 @@ body {
     color: white;
 }
 
-/* Navbar */
+/* ---------- NAVBAR ---------- */
 .navbar {
     display: flex;
     justify-content: space-between;
@@ -31,7 +31,31 @@ body {
     border-radius: 6px;
 }
 
-/* Layout */
+/* ---------- HERO BACKGROUND ---------- */
+#hero-section {
+    height: 100vh;
+    background: url("assets/images/hero-bg.jpg") no-repeat center center / cover;
+    position: relative;
+}
+
+#hero-section .overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.55);
+}
+
+.hero-content {
+    position: relative;
+    z-index: 2;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+}
+
+/* ---------- LOBBY LAYOUT ---------- */
 #app-container {
     display: flex;
     height: calc(100vh - 50px);
@@ -50,35 +74,38 @@ body {
     flex-direction: column;
 }
 
-/* Video Grid */
+/* ---------- VIDEO GRID ---------- */
 #video-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: 10px;
     padding: 10px;
 }
 
 .video-wrapper {
     position: relative;
+    background: black;
+    border-radius: 10px;
+    overflow: hidden;
 }
 
 .video-wrapper video {
     width: 100%;
-    border-radius: 10px;
-    background: black;
+    height: 100%;
+    object-fit: cover;
 }
 
 .name-label {
     position: absolute;
-    bottom: 5px;
-    left: 5px;
+    bottom: 6px;
+    left: 6px;
     background: rgba(0,0,0,0.6);
     padding: 3px 8px;
     border-radius: 4px;
     font-size: 12px;
 }
 
-/* Chat */
+/* ---------- CHAT ---------- */
 #messages-container {
     flex: 1;
     padding: 10px;
@@ -98,7 +125,7 @@ body {
     margin: 5px 0;
 }
 
-/* Controls */
+/* ---------- CONTROLS ---------- */
 #message-form {
     display: flex;
     padding: 10px;
@@ -125,7 +152,7 @@ body {
     background: #dc2626;
 }
 
-/* Mobile */
+/* ---------- MOBILE ---------- */
 @media (max-width: 768px) {
     #app-container {
         flex-direction: column;
