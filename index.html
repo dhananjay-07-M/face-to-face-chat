@@ -14,6 +14,7 @@
     <div class="nav-links">
         <a href="index.html">Home</a>
         <a href="dashboard.html" class="cta-nav">Launch Chat 🚀</a>
+        <button id="theme-toggle" class="control-btn">🌙</button>
     </div>
 </nav>
 
@@ -21,8 +22,8 @@
     <div class="overlay"></div>
     <div class="hero-content">
         <h1>Dhananjay M</h1>
-        <h2>Bridging the Digital Distance.</h2>
-        <p>"Technology is best when it brings people together."</p>
+        <h2>Bridging the Digital Distance</h2>
+        <p class="tagline">“Technology is best when it brings people together.”</p>
         <a href="dashboard.html" class="cta-button">Launch Face to Face Chat</a>
     </div>
 </header>
@@ -36,14 +37,26 @@
             <p>This is more than chat — it is digital presence 🤝.</p>
         </div>
         <div class="about-photo-placeholder">
-            <img src="1.png" class="profile-photo">
+            <img src="1.png" alt="Dhananjay M" class="profile-photo">
         </div>
     </div>
 </section>
 
 <footer>
+    <p id="visitor-count">Visitors: 0</p>
     <p>&copy; 2024 Dhananjay M. Built with ❤️ using WebRTC.</p>
 </footer>
+
+<script>
+/* Dark / Light Toggle */
+const themeBtn = document.getElementById("theme-toggle");
+if (themeBtn) {
+    themeBtn.onclick = () => {
+        document.body.classList.toggle("light");
+        themeBtn.textContent = document.body.classList.contains("light") ? "☀️" : "🌙";
+    };
+}
+</script>
 
 </body>
 </html>
