@@ -93,7 +93,7 @@ body {
     box-shadow: 0 0 20px rgba(0,0,0,0.5);
 }
 
-/* ---------- JOIN MODE SCREEN ---------- */
+/* ---------- MODE & ROOM SCREEN ---------- */
 #join-screen,
 #room-screen {
     position: fixed;
@@ -113,7 +113,7 @@ body {
     font-size: 26px;
 }
 
-/* Mode buttons aligned vertically */
+/* Mode Buttons */
 .mode-btn {
     background: #2563eb;
     color: white;
@@ -130,7 +130,7 @@ body {
     background: #1d4ed8;
 }
 
-/* ---------- ROOM CREATION UI ---------- */
+/* Room UI */
 .room-box {
     display: flex;
     flex-direction: column;
@@ -163,9 +163,7 @@ body {
 .room-btn.join { background: #2563eb; }
 .room-btn.back { background: #374151; }
 
-.room-btn:hover {
-    opacity: 0.9;
-}
+.room-btn:hover { opacity: 0.9; }
 
 /* ---------- LOBBY LAYOUT ---------- */
 #app-container {
@@ -186,7 +184,7 @@ body {
     flex-direction: column;
 }
 
-/* ---------- GOOGLE MEET / ZOOM VIDEO GRID ---------- */
+/* ---------- VIDEO GRID ---------- */
 #video-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -220,7 +218,6 @@ body {
     padding: 4px 10px;
     border-radius: 6px;
     font-size: 13px;
-    font-weight: 500;
 }
 
 .media-status {
@@ -231,7 +228,6 @@ body {
     padding: 4px 8px;
     border-radius: 6px;
     font-size: 12px;
-    color: white;
 }
 
 /* ---------- CHAT ---------- */
@@ -247,18 +243,15 @@ body {
     padding: 6px 10px;
     border-radius: 10px;
     max-width: 80%;
-    word-wrap: break-word;
 }
 
 .my-message {
     background: #2563eb;
     align-self: flex-end;
-    color: white;
 }
 
 .remote-message {
     background: #065f46;
-    color: #d1fae5;
 }
 
 /* ---------- CONTROLS ---------- */
@@ -290,15 +283,11 @@ body {
     background: #dc2626;
 }
 
-/* ---------- MODE CONTROL ---------- */
+/* ---------- MODE DISPLAY ---------- */
 .video-only #messages-container,
-.video-only #message-form {
-    display: none;
-}
+.video-only #message-form { display: none; }
 
-.text-only #video-grid {
-    display: none;
-}
+.text-only #video-grid { display: none; }
 
 /* ---------- MOBILE ---------- */
 @media (max-width: 768px) {
@@ -322,10 +311,6 @@ body {
     .about-content {
         flex-direction: column;
         text-align: center;
-    }
-
-    .about-photo-placeholder {
-        margin-top: 20px;
     }
 }
 
