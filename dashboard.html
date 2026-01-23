@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <title>Face to Face Chat - Lobby</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Face to Face Chat - Dashboard</title>
 
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
@@ -17,30 +17,26 @@
 </head>
 <body>
 
-<!-- MODE + ROOM SETUP SCREEN -->
-<div id="join-screen" class="join-panel">
-    <h2>Join or Create a Room</h2>
+<!-- MODE SELECTION -->
+<div id="mode-screen">
+    <h2>Select How You Want to Join</h2>
+    <button class="mode-btn" onclick="selectMode('text')">💬 Text Only</button>
+    <button class="mode-btn" onclick="selectMode('video')">🎥 Video Only</button>
+    <button class="mode-btn" onclick="selectMode('both')">🎥💬 Video + Text</button>
+</div>
 
-    <div class="mode-box">
-        <p>Select Mode:</p>
-        <button class="mode-btn" onclick="selectMode('text')">💬 Text Only</button>
-        <button class="mode-btn" onclick="selectMode('video')">🎥 Video Only</button>
-        <button class="mode-btn" onclick="selectMode('both')">🎥💬 Video + Text</button>
-    </div>
+<!-- ROOM SETUP -->
+<div id="room-screen" style="display:none;">
+    <h2 id="selected-mode-title"></h2>
+    <input type="text" id="room-name" placeholder="Enter Room Name">
+    <input type="number" id="max-users" placeholder="Max Members (2 - 20)" min="2" max="20">
 
-    <div class="room-box">
-        <input type="text" id="room-name" placeholder="Enter Room Name" maxlength="20">
-        <input type="number" id="max-users" placeholder="Max Members" min="2" max="20">
-    </div>
+    <button onclick="createRoom()">Create Room</button>
+    <button onclick="joinRoom()">Join Room</button>
 
-    <div class="action-box">
-        <button class="cta-nav" onclick="createRoom()">Create Room</button>
-        <button class="cta-nav" onclick="joinRoom()">Join Room</button>
-    </div>
-
-    <div class="nav-box">
-        <a href="index.html" class="cta-nav">🏠 Home</a>
-    </div>
+    <br><br>
+    <button onclick="goBackToMode()">← Back</button>
+    <a href="index.html" class="cta-nav">🏠 Home</a>
 </div>
 
 <!-- MAIN APP -->
@@ -49,8 +45,8 @@
 <nav class="navbar dashboard-nav">
     <div class="nav-brand">Face to Face Chat</div>
     <div class="nav-links">
-        <button class="cta-nav" onclick="goBack()">← Back</button>
-        <a href="index.html" class="cta-nav">Exit</a>
+        <button class="cta-nav" onclick="leaveRoom()">← Back</button>
+        <a href="index.html" class="cta-nav">Home</a>
     </div>
 </nav>
 
