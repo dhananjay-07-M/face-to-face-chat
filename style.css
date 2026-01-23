@@ -1,34 +1,127 @@
-body {
-    margin: 0;
-    font-family: Arial, sans-serif;
-    background: #0f172a;
-    color: white;
+* {
+    box-sizing: border-box;
 }
 
-/* Navbar */
+body {
+    margin: 0;
+    font-family: "Segoe UI", Arial, sans-serif;
+    background: #0b1120;
+    color: #ffffff;
+}
+
+/* ---------------- NAVBAR ---------------- */
+
 .navbar {
     display: flex;
     justify-content: space-between;
-    padding: 10px 20px;
-    background: #020617;
+    align-items: center;
+    padding: 14px 30px;
+    background: rgba(0,0,0,0.6);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.nav-brand {
+    font-size: 20px;
+    font-weight: bold;
 }
 
 .nav-links a {
-    color: white;
-    margin-left: 15px;
+    color: #fff;
     text-decoration: none;
+    margin-left: 20px;
 }
 
-/* Layout */
+.cta-nav {
+    background: #2563eb;
+    padding: 6px 12px;
+    border-radius: 6px;
+}
+
+/* ---------------- HERO ---------------- */
+
+#hero-section {
+    height: 90vh;
+    background-size: cover;
+    background-position: center;
+    position: relative;
+}
+
+#hero-section .overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.55);
+}
+
+.hero-content {
+    position: relative;
+    z-index: 2;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 20px;
+}
+
+.hero-content h1 {
+    font-size: 48px;
+    margin: 0;
+}
+
+.hero-content h2 {
+    margin-top: 10px;
+    font-weight: normal;
+}
+
+.cta-button {
+    margin-top: 20px;
+    padding: 12px 22px;
+    background: #2563eb;
+    color: #fff;
+    text-decoration: none;
+    border-radius: 8px;
+}
+
+/* ---------------- ABOUT ---------------- */
+
+.content-section {
+    padding: 50px 20px;
+    max-width: 1100px;
+    margin: auto;
+}
+
+.about-content {
+    display: flex;
+    gap: 30px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.about-text {
+    flex: 1;
+    line-height: 1.7;
+}
+
+.profile-photo {
+    width: 220px;
+    border-radius: 12px;
+    box-shadow: 0 0 20px rgba(0,0,0,0.5);
+}
+
+/* ---------------- DASHBOARD ---------------- */
+
 #app-container {
     display: flex;
     height: calc(100vh - 60px);
 }
 
 #sidebar {
-    width: 220px;
-    background: #020617;
-    padding: 10px;
+    width: 230px;
+    background: rgba(0,0,0,0.7);
+    padding: 15px;
     overflow-y: auto;
 }
 
@@ -38,86 +131,96 @@ body {
     flex-direction: column;
 }
 
-/* Video Grid */
+/* ---------------- VIDEO GRID ---------------- */
+
 #video-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
     gap: 10px;
     padding: 10px;
 }
 
-/* Video Wrapper */
 .video-wrapper {
     position: relative;
-    width: 100%;
 }
 
 .video-wrapper video {
     width: 100%;
     border-radius: 10px;
+    background: black;
 }
 
-/* Name Label on Video */
 .name-label {
     position: absolute;
     bottom: 6px;
     left: 6px;
     background: rgba(0,0,0,0.6);
-    color: white;
     padding: 3px 8px;
     font-size: 12px;
     border-radius: 4px;
 }
 
-/* Chat */
+/* ---------------- CHAT ---------------- */
+
 #messages-container {
     flex: 1;
+    background: rgba(0,0,0,0.6);
     padding: 10px;
     overflow-y: auto;
-    background: #020617;
 }
 
 .my-message {
     text-align: right;
-    margin: 5px;
-    color: #38bdf8;
+    color: #60a5fa;
+    margin: 4px 0;
 }
 
 .remote-message {
     text-align: left;
-    margin: 5px;
     color: #a7f3d0;
+    margin: 4px 0;
 }
 
-/* Controls */
+/* ---------------- CONTROLS ---------------- */
+
 #message-form {
     display: flex;
     padding: 10px;
-    background: #020617;
+    background: rgba(0,0,0,0.7);
 }
 
 #message-input {
     flex: 1;
     padding: 8px;
-    border-radius: 5px;
+    border-radius: 6px;
     border: none;
 }
 
 .control-btn {
-    margin-left: 5px;
+    margin-left: 6px;
     padding: 8px 12px;
     border: none;
-    border-radius: 5px;
+    border-radius: 6px;
     background: #2563eb;
-    color: white;
+    color: #fff;
 }
 
 .end-call {
     background: #dc2626;
 }
 
-/* Mobile Responsive */
+/* ---------------- MOBILE ---------------- */
+
 @media (max-width: 768px) {
+    .hero-content h1 {
+        font-size: 30px;
+    }
+
+    .about-content {
+        flex-direction: column;
+        text-align: center;
+    }
+
     #app-container {
         flex-direction: column;
     }
@@ -134,4 +237,13 @@ body {
     #video-grid {
         grid-template-columns: 1fr;
     }
+}
+
+/* ---------------- FOOTER ---------------- */
+
+footer {
+    text-align: center;
+    padding: 15px;
+    background: #020617;
+    font-size: 14px;
 }
