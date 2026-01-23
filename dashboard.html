@@ -25,13 +25,13 @@
     <button class="mode-btn" onclick="selectMode('both')">🎥💬 Video + Text</button>
 </div>
 
-<!-- MAIN APP (Hidden initially) -->
+<!-- MAIN APP -->
 <div id="main-app" style="display:none;">
 
 <nav class="navbar dashboard-nav">
     <div class="nav-brand">Face to Face Chat</div>
     <div class="nav-links">
-        <span id="room-display">Lobby</span>
+        <button class="cta-nav" onclick="location.reload()">← Back</button>
         <a href="index.html" class="cta-nav">Exit</a>
     </div>
 </nav>
@@ -49,6 +49,7 @@
             <div class="video-wrapper">
                 <video id="local-video" muted autoplay playsinline></video>
                 <div class="name-label">You</div>
+                <div class="media-status" id="status-local"></div>
             </div>
         </div>
 
@@ -60,19 +61,19 @@
             <input type="file" id="file-input" hidden>
             <button type="button" id="file-btn" class="control-btn">📎</button>
 
-            <button id="mic-toggle" type="button" class="control-btn">
+            <button id="mic-toggle" type="button" class="control-btn" title="Mute / Unmute">
                 <i class="fas fa-microphone"></i>
             </button>
 
-            <button id="video-toggle" type="button" class="control-btn">
+            <button id="video-toggle" type="button" class="control-btn" title="Camera On / Off">
                 <i class="fas fa-video"></i>
             </button>
 
-            <button type="submit" class="control-btn">
+            <button type="submit" class="control-btn" title="Send Message">
                 <i class="fas fa-paper-plane"></i>
             </button>
 
-            <button id="leave-call" type="button" class="control-btn end-call">
+            <button id="leave-call" type="button" class="control-btn end-call" title="Leave Call">
                 <i class="fas fa-phone-slash"></i>
             </button>
         </form>
