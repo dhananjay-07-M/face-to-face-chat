@@ -1,6 +1,6 @@
 // ===============================
-// FINAL SCRIPT.JS PART 1
-// Join Mode + Video + Chat + Files + Status Sync
+// FINAL SCRIPT.JS PART 1 (FIXED)
+// Join Mode + Video + Chat + Files + Live Status Sync
 // ===============================
 
 const firebaseConfig = {
@@ -30,12 +30,11 @@ const peerConfig = {
 
 let localStream, peer, myPeerId;
 let DISPLAY_NAME = "";
-let JOIN_MODE = "both"; // text | video | both
+let JOIN_MODE = "both";
 
 const connections = {};
 const userNames = {};
 const userModes = {};
-const userStatus = {};
 const receivedFiles = {};
 const CHUNK_SIZE = 16000;
 
@@ -54,32 +53,27 @@ const onlineUsersList = document.getElementById("online-users-list");
 const fileInput = document.getElementById("file-input");
 const fileBtn = document.getElementById("file-btn");
 
-// ---------- USERNAME VALIDATION ----------
+// ---------- USERNAME ----------
 function getValidUsername() {
     const regex = /^[A-Za-z0-9]+( [A-Za-z0-9]+)?$/;
     while (true) {
-        let name = prompt("Enter your name (letters, numbers, one space, max 15):");
+        let name = prompt("Enter your name (letters/numbers, one space, max 15):");
         if (!name) continue;
         name = name.trim();
         if (name.length <= 15 && regex.test(name)) return name;
-        alert("Invalid name format!");
+        alert("Invalid name!");
     }
 }
 
-// ---------- MODE SELECTION ----------
+// ---------- MODE ----------
 function selectMode(mode) {
     JOIN_MODE = mode;
-    document.body.classList.add(
-        mode === "text" ? "text-only" :
-        mode === "video" ? "video-only" : "both-mode"
-    );
-
     joinScreen.style.display = "none";
     mainApp.style.display = "block";
     initializeApp();
 }
 
-// ---------- INITIALIZE ----------
+// ---------- INIT ----------
 async function initializeApp() {
     DISPLAY_NAME = getValidUsername();
 
@@ -101,19 +95,19 @@ async function initializeApp() {
             mic: true,
             cam: JOIN_MODE !== "text"
         });
-
         onlineUsersRef.child(id).onDisconnect().remove();
 
         onlineUsersRef.on("child_added", snap => {
             const user = snap.val();
             userNames[user.peerId] = user.name;
             userModes[user.peerId] = user.mode;
-            userStatus[user.peerId] = { mic: user.mic, cam: user.cam };
             addOnlineUser(user.peerId, user.name, user.mode);
 
-            if (user.peerId !== id && JOIN_MODE !== "text" && user.mode !== "text") {
-                callPeer(user.peerId);
-                connectToPeer(user.peerId);
+            if (user.peerId !== id) {
+                connectToPeer(user.peerId); // always connect chat
+                if (JOIN_MODE !== "text" && user.mode !== "text") {
+                    callPeer(user.peerId); // only video if both allow
+                }
             }
         });
 
@@ -137,7 +131,7 @@ async function initializeApp() {
     peer.on("connection", setupDataConnection);
 }
 
-// ---------- CALLING ----------
+// ---------- CONNECTION ----------
 function callPeer(id) {
     if (connections[id]?.media) return;
     const call = peer.call(id, localStream);
@@ -155,36 +149,14 @@ function connectToPeer(id) {
 // ---------- DATA ----------
 function setupDataConnection(conn) {
     conn.on("data", data => {
-        if (data.type === "chat") {
-            displayMessage(data.user, data.text, false);
-        }
-        if (data.type === "image") {
-            displayMessage(data.user, data.dataURL, false);
-        }
-        if (data.type === "file_meta") {
-            receivedFiles[data.peerId] = { ...data, chunks: [], received: 0 };
-            displayMessage("System", `${data.sender} sending ${data.name}`, false);
-        }
-        if (data.type === "file_chunk") {
-            const file = receivedFiles[data.peerId];
-            file.chunks.push(data.chunk);
-            file.received += data.chunk.byteLength;
-            if (file.received >= file.size) {
-                const blob = new Blob(file.chunks, { type: file.mime });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement("a");
-                a.href = url;
-                a.download = file.name;
-                a.textContent = "Download " + file.name;
-                messagesContainer.appendChild(a);
-                delete receivedFiles[data.peerId];
-            }
-        }
+        if (data.type === "chat") displayMessage(data.user, data.text, false);
+        if (data.type === "media_status") updateMediaStatus(data.peerId, data.mic, data.cam);
     });
 }
-// ---------- VIDEO UI ----------
+
+// ---------- VIDEO ----------
 function addVideoStream(id, stream) {
-    if (document.getElementById("remote-" + id)) return;
+    if (document.getElementById("wrap-" + id)) return;
 
     const wrapper = document.createElement("div");
     wrapper.className = "video-wrapper";
@@ -194,31 +166,23 @@ function addVideoStream(id, stream) {
     video.srcObject = stream;
     video.autoplay = true;
     video.playsInline = true;
-    video.id = "remote-" + id;
 
     const name = document.createElement("div");
     name.className = "name-label";
-    name.innerText = userNames[id] || "User";
+    name.innerText = userNames[id];
 
     const status = document.createElement("div");
     status.className = "media-status";
     status.id = "status-" + id;
-    status.innerText = "";
 
-    wrapper.appendChild(video);
-    wrapper.appendChild(name);
-    wrapper.appendChild(status);
+    wrapper.append(video, name, status);
     videoGrid.appendChild(wrapper);
 }
 
-function updateMediaStatus(id, micOn, camOn) {
-    const status = document.getElementById("status-" + id);
-    if (!status) return;
-
-    let icons = "";
-    if (!micOn) icons += "🔇 ";
-    if (!camOn) icons += "🚫";
-    status.innerText = icons;
+function updateMediaStatus(id, mic, cam) {
+    const el = document.getElementById("status-" + id);
+    if (!el) return;
+    el.innerText = (!mic ? "🔇 " : "") + (!cam ? "🚫" : "");
 }
 
 function removeVideoStream(id) {
@@ -235,80 +199,41 @@ function displayMessage(user, text, mine) {
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
 }
 
-messageForm.addEventListener("submit", e => {
+messageForm.onsubmit = e => {
     e.preventDefault();
     const msg = messageInput.value.trim();
     if (!msg) return;
 
     displayMessage(DISPLAY_NAME, msg, true);
-    Object.values(connections).forEach(c => {
-        c.data?.send({ type: "chat", user: DISPLAY_NAME, text: msg });
-    });
+    Object.values(connections).forEach(c =>
+        c.data?.send({ type: "chat", user: DISPLAY_NAME, text: msg })
+    );
     messageInput.value = "";
-});
-
-// ---------- FILE SEND ----------
-fileBtn.onclick = () => fileInput.click();
-
-fileInput.onchange = () => {
-    const file = fileInput.files[0];
-    if (!file) return;
-
-    if (file.type.startsWith("image/")) {
-        const reader = new FileReader();
-        reader.onload = e => {
-            Object.values(connections).forEach(c =>
-                c.data?.send({ type: "image", user: DISPLAY_NAME, dataURL: e.target.result })
-            );
-            displayMessage(DISPLAY_NAME, "[Image Sent]", true);
-        };
-        reader.readAsDataURL(file);
-    }
-
-    const meta = {
-        type: "file_meta",
-        name: file.name,
-        size: file.size,
-        mime: file.type,
-        sender: DISPLAY_NAME,
-        peerId: myPeerId
-    };
-
-    Object.values(connections).forEach(c => c.data?.send(meta));
-
-    const reader = new FileReader();
-    let offset = 0;
-
-    reader.onload = e => {
-        Object.values(connections).forEach(c =>
-            c.data?.send({ type: "file_chunk", peerId: myPeerId, chunk: e.target.result })
-        );
-        offset += e.target.result.byteLength;
-        if (offset < file.size) readNextChunk();
-    };
-
-    function readNextChunk() {
-        const slice = file.slice(offset, offset + CHUNK_SIZE);
-        reader.readAsArrayBuffer(slice);
-    }
-
-    readNextChunk();
 };
 
-// ---------- MIC / CAM TOGGLE SYNC ----------
+// ---------- STATUS BROADCAST ----------
+function broadcastStatus() {
+    const mic = localStream.getAudioTracks()[0].enabled;
+    const cam = localStream.getVideoTracks()[0].enabled;
+
+    onlineUsersRef.child(myPeerId).update({ mic, cam });
+
+    Object.values(connections).forEach(c =>
+        c.data?.send({ type: "media_status", peerId: myPeerId, mic, cam })
+    );
+}
+
 micToggle.onclick = () => {
-    const track = localStream.getAudioTracks()[0];
-    track.enabled = !track.enabled;
-    onlineUsersRef.child(myPeerId).update({ mic: track.enabled });
+    localStream.getAudioTracks()[0].enabled = !localStream.getAudioTracks()[0].enabled;
+    broadcastStatus();
 };
 
 videoToggle.onclick = () => {
-    const track = localStream.getVideoTracks()[0];
-    track.enabled = !track.enabled;
-    onlineUsersRef.child(myPeerId).update({ cam: track.enabled });
+    localStream.getVideoTracks()[0].enabled = !localStream.getVideoTracks()[0].enabled;
+    broadcastStatus();
 };
 
-// ---------- ONLINE USERS ----------
+// ---------- USERS ----------
 function addOnlineUser(id, name, mode) {
     const p = document.createElement("p");
     p.id = "user-" + id;
