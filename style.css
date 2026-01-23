@@ -2,36 +2,27 @@
     box-sizing: border-box;
     margin: 0;
     padding: 0;
+    font-family: Arial, sans-serif;
 }
 
 body {
-    font-family: "Segoe UI", Arial, sans-serif;
     background: #0b1120;
-    color: #ffffff;
+    color: white;
 }
 
-/* ---------------- NAVBAR ---------------- */
-
+/* Navbar */
 .navbar {
     display: flex;
     justify-content: space-between;
+    padding: 12px 20px;
+    background: #020617;
     align-items: center;
-    padding: 14px 30px;
-    background: rgba(0,0,0,0.7);
-    position: sticky;
-    top: 0;
-    z-index: 10;
 }
 
-.nav-brand {
-    font-size: 20px;
-    font-weight: bold;
-}
-
-.nav-links a {
-    color: #fff;
+.nav-links a, .nav-links span {
+    color: white;
+    margin-left: 15px;
     text-decoration: none;
-    margin-left: 20px;
 }
 
 .cta-nav {
@@ -40,92 +31,16 @@ body {
     border-radius: 6px;
 }
 
-/* ---------------- HERO SECTION ---------------- */
-
-#hero-section {
-    height: 100vh;
-    background: url("assets/images/hero-bg.jpg") no-repeat center center / cover;
-    position: relative;
-}
-
-#hero-section .overlay {
-    position: absolute;
-    inset: 0;
-    background: rgba(0,0,0,0.55);
-}
-
-.hero-content {
-    position: relative;
-    z-index: 2;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-    padding: 20px;
-}
-
-.hero-content h1 {
-    font-size: 48px;
-}
-
-.hero-content h2 {
-    margin-top: 10px;
-    font-weight: normal;
-}
-
-.tagline {
-    margin-top: 10px;
-    opacity: 0.9;
-}
-
-.cta-button {
-    margin-top: 20px;
-    padding: 12px 22px;
-    background: #2563eb;
-    color: #fff;
-    text-decoration: none;
-    border-radius: 8px;
-}
-
-/* ---------------- ABOUT ---------------- */
-
-.content-section {
-    padding: 50px 20px;
-    max-width: 1100px;
-    margin: auto;
-}
-
-.about-content {
-    display: flex;
-    gap: 30px;
-    align-items: center;
-    flex-wrap: wrap;
-}
-
-.about-text {
-    flex: 1;
-    line-height: 1.7;
-}
-
-.profile-photo {
-    width: 220px;
-    border-radius: 12px;
-    box-shadow: 0 0 20px rgba(0,0,0,0.5);
-}
-
-/* ---------------- DASHBOARD ---------------- */
-
+/* Layout */
 #app-container {
     display: flex;
-    height: calc(100vh - 60px);
+    height: calc(100vh - 50px);
 }
 
 #sidebar {
-    width: 230px;
-    background: rgba(0,0,0,0.7);
-    padding: 15px;
+    width: 220px;
+    background: #020617;
+    padding: 10px;
     overflow-y: auto;
 }
 
@@ -135,11 +50,10 @@ body {
     flex-direction: column;
 }
 
-/* ---------------- VIDEO GRID ---------------- */
-
+/* Video Grid */
 #video-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
     gap: 10px;
     padding: 10px;
 }
@@ -156,75 +70,63 @@ body {
 
 .name-label {
     position: absolute;
-    bottom: 6px;
-    left: 6px;
+    bottom: 5px;
+    left: 5px;
     background: rgba(0,0,0,0.6);
     padding: 3px 8px;
-    font-size: 12px;
     border-radius: 4px;
+    font-size: 12px;
 }
 
-/* ---------------- CHAT ---------------- */
-
+/* Chat */
 #messages-container {
     flex: 1;
-    background: rgba(0,0,0,0.6);
     padding: 10px;
+    background: #020617;
     overflow-y: auto;
 }
 
 .my-message {
     text-align: right;
-    color: #60a5fa;
-    margin: 4px 0;
+    color: #38bdf8;
+    margin: 5px 0;
 }
 
 .remote-message {
     text-align: left;
     color: #a7f3d0;
-    margin: 4px 0;
+    margin: 5px 0;
 }
 
-/* ---------------- CONTROLS ---------------- */
-
+/* Controls */
 #message-form {
     display: flex;
     padding: 10px;
-    background: rgba(0,0,0,0.7);
+    background: #020617;
 }
 
 #message-input {
     flex: 1;
     padding: 8px;
-    border-radius: 6px;
+    border-radius: 5px;
     border: none;
 }
 
 .control-btn {
-    margin-left: 6px;
-    padding: 8px 12px;
-    border: none;
-    border-radius: 6px;
+    margin-left: 5px;
+    padding: 8px 10px;
     background: #2563eb;
-    color: #fff;
+    border: none;
+    border-radius: 5px;
+    color: white;
 }
 
 .end-call {
     background: #dc2626;
 }
 
-/* ---------------- MOBILE ---------------- */
-
+/* Mobile */
 @media (max-width: 768px) {
-    .hero-content h1 {
-        font-size: 30px;
-    }
-
-    .about-content {
-        flex-direction: column;
-        text-align: center;
-    }
-
     #app-container {
         flex-direction: column;
     }
@@ -241,13 +143,4 @@ body {
     #video-grid {
         grid-template-columns: 1fr;
     }
-}
-
-/* ---------------- FOOTER ---------------- */
-
-footer {
-    text-align: center;
-    padding: 15px;
-    background: #020617;
-    font-size: 14px;
 }
