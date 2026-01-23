@@ -2,8 +2,9 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-    <title>Face to Face Chat - Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Face to Face Chat - Lobby</title>
+
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 
@@ -19,20 +20,25 @@
 <nav class="navbar dashboard-nav">
     <div class="nav-brand">Face to Face Chat</div>
     <div class="nav-links">
-        <a href="index.html" class="cta-nav">← Back</a>
-        <span id="room-display">Room: Lobby</span>
+        <span id="room-display">Lobby</span>
+        <a href="index.html" class="cta-nav">Exit</a>
     </div>
 </nav>
 
 <div id="app-container">
+
     <aside id="sidebar">
         <h3>Online Users</h3>
         <div id="online-users-list"></div>
     </aside>
 
     <main id="main-content">
+
         <div id="video-grid">
-            <video id="local-video" muted autoplay playsinline></video>
+            <div class="video-wrapper">
+                <video id="local-video" muted autoplay playsinline></video>
+                <div class="name-label">You</div>
+            </div>
         </div>
 
         <div id="messages-container"></div>
@@ -56,7 +62,9 @@
                 <i class="fas fa-phone-slash"></i>
             </button>
         </form>
+
     </main>
+
 </div>
 
 <script src="script.js"></script>
