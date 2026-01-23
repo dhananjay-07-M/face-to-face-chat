@@ -17,17 +17,22 @@
 </head>
 <body>
 
-<!-- JOIN MODE SCREEN -->
+<!-- MODE SELECTION -->
 <div id="join-screen">
-    <!-- HOME BUTTON -->
-    <div style="position:absolute; top:15px; left:15px;">
-        <a href="index.html" class="cta-nav">🏠 Home</a>
-    </div>
-
-    <h2>How do you want to join?</h2>
+    <h2>Select Join Mode</h2>
     <button class="mode-btn" onclick="selectMode('text')">💬 Text Only</button>
     <button class="mode-btn" onclick="selectMode('video')">🎥 Video Only</button>
     <button class="mode-btn" onclick="selectMode('both')">🎥💬 Video + Text</button>
+</div>
+
+<!-- ROOM SETUP -->
+<div id="room-screen" style="display:none;">
+    <h2>Create / Join Room</h2>
+    <input type="text" id="room-name" placeholder="Enter Room Name">
+    <input type="number" id="max-users" placeholder="Max Members" min="2" max="20">
+    <button class="mode-btn" onclick="enterRoom()">Enter Room</button>
+    <button class="mode-btn" onclick="backToMode()">← Back</button>
+    <button class="mode-btn" onclick="location.href='index.html'">🏠 Home</button>
 </div>
 
 <!-- MAIN APP -->
@@ -37,7 +42,7 @@
     <div class="nav-brand">Face to Face Chat</div>
     <div class="nav-links">
         <button class="cta-nav" onclick="location.reload()">← Back</button>
-        <a href="index.html" class="cta-nav">🏠 Home</a>
+        <a href="index.html" class="cta-nav">Home</a>
     </div>
 </nav>
 
@@ -66,19 +71,19 @@
             <input type="file" id="file-input" hidden>
             <button type="button" id="file-btn" class="control-btn">📎</button>
 
-            <button id="mic-toggle" type="button" class="control-btn" title="Mute / Unmute">
+            <button id="mic-toggle" type="button" class="control-btn">
                 <i class="fas fa-microphone"></i>
             </button>
 
-            <button id="video-toggle" type="button" class="control-btn" title="Camera On / Off">
+            <button id="video-toggle" type="button" class="control-btn">
                 <i class="fas fa-video"></i>
             </button>
 
-            <button type="submit" class="control-btn" title="Send Message">
+            <button type="submit" class="control-btn">
                 <i class="fas fa-paper-plane"></i>
             </button>
 
-            <button id="leave-call" type="button" class="control-btn end-call" title="Leave Call">
+            <button id="leave-call" type="button" class="control-btn end-call">
                 <i class="fas fa-phone-slash"></i>
             </button>
         </form>
