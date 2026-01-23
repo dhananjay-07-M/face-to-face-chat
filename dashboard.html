@@ -17,6 +17,17 @@
 </head>
 <body>
 
+<!-- JOIN MODE SCREEN -->
+<div id="join-screen">
+    <h2>How do you want to join?</h2>
+    <button class="mode-btn" onclick="selectMode('text')">💬 Text Only</button>
+    <button class="mode-btn" onclick="selectMode('video')">🎥 Video Only</button>
+    <button class="mode-btn" onclick="selectMode('both')">🎥💬 Video + Text</button>
+</div>
+
+<!-- MAIN APP (Hidden initially) -->
+<div id="main-app" style="display:none;">
+
 <nav class="navbar dashboard-nav">
     <div class="nav-brand">Face to Face Chat</div>
     <div class="nav-links">
@@ -46,7 +57,6 @@
         <form id="message-form">
             <input type="text" id="message-input" placeholder="Type a message..." required>
 
-            <!-- File / Image Upload -->
             <input type="file" id="file-input" hidden>
             <button type="button" id="file-btn" class="control-btn">📎</button>
 
@@ -70,8 +80,8 @@
     </main>
 
 </div>
+</div>
 
 <script src="script.js"></script>
-
 </body>
 </html>
