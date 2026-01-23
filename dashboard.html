@@ -1,65 +1,65 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
     <title>Face to Face Chat - Dashboard</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    
+
+    <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/7.14.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/7.14.0/firebase-database.js"></script>
-    
+
+    <!-- PeerJS -->
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 </head>
 <body>
 
-    <nav class="navbar dashboard-nav">
-        <div class="nav-brand">Face to Face Chat</div>
-        <div class="nav-links">
-            <a href="index.html" class="cta-nav">← Back to Portfolio</a>
-            <span id="room-display">Room: Lobby</span>
-        </div>
-    </nav>
-
-    <div id="app-container">
-        
-        <aside id="sidebar">
-            <h3>Online Users</h3>
-            <div id="online-users-list">
-                </div>
-        </aside>
-
-        <main id="main-content">
-            
-            <div id="video-grid">
-                <video id="local-video" muted autoplay playsinline></video>
-            </div>
-            
-            <div id="messages-container">
-                </div>
-
-            <form id="message-form"> 
-                <input type="text" id="message-input" placeholder="Type a message...">
-                
-                <button id="mic-toggle" type="button" class="control-btn" title="Toggle Mic">
-                    <i class="fas fa-microphone"></i>
-                </button>
-                <button id="video-toggle" type="button" class="control-btn" title="Toggle Video">
-                    <i class="fas fa-video"></i>
-                </button>
-                <button type="submit" class="control-btn" title="Send Message">
-                    <i class="fas fa-paper-plane"></i>
-                </button>
-                <button id="leave-call" type="button" class="control-btn end-call" title="Leave Call">
-                    <i class="fas fa-phone-slash"></i>
-                </button>
-            </form>
-        </main>
+<nav class="navbar dashboard-nav">
+    <div class="nav-brand">Face to Face Chat</div>
+    <div class="nav-links">
+        <a href="index.html" class="cta-nav">← Back</a>
+        <span id="room-display">Room: Lobby</span>
     </div>
-    
-    <script src="script.js"></script>
+</nav>
+
+<div id="app-container">
+    <aside id="sidebar">
+        <h3>Online Users</h3>
+        <div id="online-users-list"></div>
+    </aside>
+
+    <main id="main-content">
+        <div id="video-grid">
+            <video id="local-video" muted autoplay playsinline></video>
+        </div>
+
+        <div id="messages-container"></div>
+
+        <form id="message-form">
+            <input type="text" id="message-input" placeholder="Type a message..." required>
+
+            <button id="mic-toggle" type="button" class="control-btn">
+                <i class="fas fa-microphone"></i>
+            </button>
+
+            <button id="video-toggle" type="button" class="control-btn">
+                <i class="fas fa-video"></i>
+            </button>
+
+            <button type="submit" class="control-btn">
+                <i class="fas fa-paper-plane"></i>
+            </button>
+
+            <button id="leave-call" type="button" class="control-btn end-call">
+                <i class="fas fa-phone-slash"></i>
+            </button>
+        </form>
+    </main>
+</div>
+
+<script src="script.js"></script>
 
 </body>
 </html>
