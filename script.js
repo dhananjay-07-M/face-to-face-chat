@@ -1,5 +1,5 @@
 // ===============================
-// FINAL SCRIPT.JS (STABLE VERSION)
+// FINAL STABLE SCRIPT.JS
 // ===============================
 
 const firebaseConfig = {
@@ -14,6 +14,7 @@ const firebaseConfig = {
 
 firebase.initializeApp(firebaseConfig);
 const database = firebase.database();
+
 const ROOM_NAME = "Lobby";
 const onlineUsersRef = database.ref("onlineUsers/" + ROOM_NAME);
 
@@ -38,6 +39,7 @@ const messageInput = document.getElementById("message-input");
 const micToggle = document.getElementById("mic-toggle");
 const videoToggle = document.getElementById("video-toggle");
 const leaveCall = document.getElementById("leave-call");
+const onlineUsersList = document.getElementById("online-users-list");
 
 function generateRandomId() {
     return "user_" + Math.random().toString(36).substr(2, 9);
@@ -62,6 +64,7 @@ async function initializeVideo() {
         onlineUsersRef.on("child_added", snap => {
             const user = snap.val();
             userNames[user.peerId] = user.name;
+            addOnlineUser(user.peerId, user.name);
 
             if (user.peerId !== id) {
                 callPeer(user.peerId);
@@ -70,6 +73,7 @@ async function initializeVideo() {
         });
 
         onlineUsersRef.on("child_removed", snap => {
+            removeOnlineUser(snap.key);
             removeVideoStream(snap.key);
         });
     });
@@ -146,6 +150,18 @@ messageForm.addEventListener("submit", e => {
     });
     messageInput.value = "";
 });
+
+function addOnlineUser(id, name) {
+    const p = document.createElement("p");
+    p.id = "user-" + id;
+    p.innerText = "🟢 " + name;
+    onlineUsersList.appendChild(p);
+}
+
+function removeOnlineUser(id) {
+    const el = document.getElementById("user-" + id);
+    if (el) el.remove();
+}
 
 micToggle.onclick = () => {
     const track = localStream.getAudioTracks()[0];
