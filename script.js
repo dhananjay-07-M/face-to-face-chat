@@ -1,5 +1,5 @@
 // ===============================
-// FINAL STABLE SCRIPT.JS
+// FINAL SCRIPT.JS (VIDEO + CHAT + FILE + IMAGE)
 // ===============================
 
 const firebaseConfig = {
@@ -28,8 +28,11 @@ const peerConfig = {
 };
 
 let localStream, peer, myPeerId;
+let DISPLAY_NAME = "";
 const connections = {};
 const userNames = {};
+const receivedFiles = {};
+const CHUNK_SIZE = 16000;
 
 const localVideo = document.getElementById("local-video");
 const videoGrid = document.getElementById("video-grid");
@@ -40,14 +43,29 @@ const micToggle = document.getElementById("mic-toggle");
 const videoToggle = document.getElementById("video-toggle");
 const leaveCall = document.getElementById("leave-call");
 const onlineUsersList = document.getElementById("online-users-list");
+const fileInput = document.getElementById("file-input");
+const fileBtn = document.getElementById("file-btn");
 
 function generateRandomId() {
     return "user_" + Math.random().toString(36).substr(2, 9);
 }
 
+function getValidUsername() {
+    let name = "";
+    const regex = /^[A-Za-z0-9]+( [A-Za-z0-9]+)?$/;
+
+    while (true) {
+        name = prompt("Enter your name (letters/numbers, one space allowed, max 15 chars):");
+        if (!name) continue;
+        name = name.trim();
+
+        if (name.length <= 15 && regex.test(name)) return name;
+        alert("Invalid name! Only letters, numbers, ONE space allowed. Max 15 characters.");
+    }
+}
+
 async function initializeVideo() {
-    const name = prompt("Enter your name:");
-    const DISPLAY_NAME = name && name.trim() !== "" ? name : "Guest";
+    DISPLAY_NAME = getValidUsername();
 
     localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
     localVideo.srcObject = localStream;
@@ -85,8 +103,44 @@ async function initializeVideo() {
 
     peer.on("connection", conn => {
         conn.on("data", data => {
+
             if (data.type === "chat") {
                 displayMessage(data.user, data.text, false);
+            }
+
+            if (data.type === "file_meta") {
+                receivedFiles[data.peerId] = {
+                    name: data.name,
+                    size: data.size,
+                    mime: data.mime,
+                    sender: data.sender,
+                    chunks: [],
+                    received: 0
+                };
+                displayMessage("System", `${data.sender} is sending ${data.name}`, false);
+            }
+
+            if (data.type === "file_chunk") {
+                const file = receivedFiles[data.peerId];
+                file.chunks.push(data.chunk);
+                file.received += data.chunk.byteLength;
+
+                if (file.received >= file.size) {
+                    const blob = new Blob(file.chunks, { type: file.mime });
+                    const url = URL.createObjectURL(blob);
+
+                    const link = document.createElement("a");
+                    link.href = url;
+                    link.download = file.name;
+                    link.textContent = `Download ${file.name}`;
+                    link.style.color = "#38bdf8";
+
+                    const div = document.createElement("div");
+                    div.appendChild(link);
+                    messagesContainer.appendChild(div);
+
+                    delete receivedFiles[data.peerId];
+                }
             }
         });
     });
@@ -134,7 +188,18 @@ function removeVideoStream(id) {
 function displayMessage(user, text, mine) {
     const div = document.createElement("div");
     div.className = mine ? "my-message" : "remote-message";
-    div.innerHTML = `<b>${user}</b>: ${text}`;
+
+    if (typeof text === "string" && text.startsWith("data:image")) {
+        const img = document.createElement("img");
+        img.src = text;
+        img.style.maxWidth = "200px";
+        img.style.borderRadius = "8px";
+        div.innerHTML = `<b>${user}</b><br>`;
+        div.appendChild(img);
+    } else {
+        div.innerHTML = `<b>${user}</b>: ${text}`;
+    }
+
     messagesContainer.appendChild(div);
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
 }
@@ -144,12 +209,54 @@ messageForm.addEventListener("submit", e => {
     const msg = messageInput.value.trim();
     if (!msg) return;
 
-    displayMessage("Me", msg, true);
+    displayMessage(DISPLAY_NAME, msg, true);
     Object.values(connections).forEach(c => {
-        if (c.data) c.data.send({ type: "chat", user: "Me", text: msg });
+        if (c.data) c.data.send({ type: "chat", user: DISPLAY_NAME, text: msg });
     });
     messageInput.value = "";
 });
+
+fileBtn.onclick = () => fileInput.click();
+
+fileInput.onchange = () => {
+    const file = fileInput.files[0];
+    if (!file) return;
+
+    const meta = {
+        type: "file_meta",
+        name: file.name,
+        size: file.size,
+        mime: file.type,
+        sender: DISPLAY_NAME,
+        peerId: myPeerId
+    };
+
+    Object.values(connections).forEach(c => c.data?.send(meta));
+
+    const reader = new FileReader();
+    let offset = 0;
+
+    reader.onload = e => {
+        Object.values(connections).forEach(c => {
+            c.data?.send({
+                type: "file_chunk",
+                peerId: myPeerId,
+                chunk: e.target.result
+            });
+        });
+
+        offset += e.target.result.byteLength;
+        if (offset < file.size) readNextChunk();
+        else displayMessage("System", `File sent: ${file.name}`, true);
+    };
+
+    function readNextChunk() {
+        const slice = file.slice(offset, offset + CHUNK_SIZE);
+        reader.readAsArrayBuffer(slice);
+    }
+
+    readNextChunk();
+};
 
 function addOnlineUser(id, name) {
     const p = document.createElement("p");
@@ -163,15 +270,8 @@ function removeOnlineUser(id) {
     if (el) el.remove();
 }
 
-micToggle.onclick = () => {
-    const track = localStream.getAudioTracks()[0];
-    track.enabled = !track.enabled;
-};
-
-videoToggle.onclick = () => {
-    const track = localStream.getVideoTracks()[0];
-    track.enabled = !track.enabled;
-};
+micToggle.onclick = () => localStream.getAudioTracks()[0].enabled = !localStream.getAudioTracks()[0].enabled;
+videoToggle.onclick = () => localStream.getVideoTracks()[0].enabled = !localStream.getVideoTracks()[0].enabled;
 
 leaveCall.onclick = () => {
     onlineUsersRef.child(myPeerId).remove();
