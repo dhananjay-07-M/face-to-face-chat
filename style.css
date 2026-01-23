@@ -154,16 +154,23 @@ body {
     overflow-y: auto;
 }
 
+.my-message, .remote-message {
+    margin: 6px 0;
+    padding: 6px 10px;
+    border-radius: 10px;
+    max-width: 80%;
+    word-wrap: break-word;
+}
+
 .my-message {
-    text-align: right;
-    color: #38bdf8;
-    margin: 5px 0;
+    background: #2563eb;
+    align-self: flex-end;
+    color: white;
 }
 
 .remote-message {
-    text-align: left;
-    color: #a7f3d0;
-    margin: 5px 0;
+    background: #065f46;
+    color: #d1fae5;
 }
 
 /* ---------- CONTROLS ---------- */
@@ -171,6 +178,7 @@ body {
     display: flex;
     padding: 10px;
     background: #020617;
+    align-items: center;
 }
 
 #message-input {
@@ -187,6 +195,7 @@ body {
     border: none;
     border-radius: 5px;
     color: white;
+    cursor: pointer;
 }
 
 .end-call {
