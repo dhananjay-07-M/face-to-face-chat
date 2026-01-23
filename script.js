@@ -1,6 +1,6 @@
 // ===============================
 // VISIO - SCRIPT.JS (PART 1)
-// Mode + Room + Max Users + Firebase + Peer Setup
+// Mode + Room ID + Room Name + Max Users + Firebase + Peer Setup
 // ===============================
 
 const firebaseConfig = {
@@ -17,7 +17,8 @@ firebase.initializeApp(firebaseConfig);
 const database = firebase.database();
 
 let CURRENT_MODE = "";
-let CURRENT_ROOM = "";
+let ROOM_NAME = "";
+let ROOM_ID = "";
 let MAX_USERS = 0;
 
 let localStream, peer, myPeerId;
@@ -34,6 +35,7 @@ const roomScreen = document.getElementById("room-screen");
 const mainApp = document.getElementById("main-app");
 
 const roomNameInput = document.getElementById("room-name");
+const roomIdInput = document.getElementById("room-id");
 const maxUsersInput = document.getElementById("max-users");
 const selectedModeTitle = document.getElementById("selected-mode-title");
 
@@ -51,13 +53,13 @@ const fileBtn = document.getElementById("file-btn");
 
 // ---------- USERNAME ----------
 function getValidUsername() {
-    const regex = /^[A-Za-z0-9]+( [A-Za-z0-9]+)?$/;
+    const regex = /^[A-Za-z0-9 ]{1,15}$/;
     while (true) {
-        let name = prompt("Enter your name (max 15 chars, letters & numbers, one space allowed):");
+        let name = prompt("Enter your name (max 15 characters):");
         if (!name) continue;
         name = name.trim();
-        if (name.length <= 15 && regex.test(name)) return name;
-        alert("Invalid name format!");
+        if (regex.test(name)) return name;
+        alert("Invalid name!");
     }
 }
 
@@ -68,29 +70,43 @@ function selectMode(mode) {
     roomScreen.style.display = "flex";
 
     selectedModeTitle.innerText =
-        mode === "text" ? "Text Only Room" :
-        mode === "video" ? "Video Only Room" :
-        "Video + Text Room";
+        mode === "text" ? "Create / Join Text Room" :
+        mode === "video" ? "Create / Join Video Room" :
+        "Create / Join Video + Text Room";
 }
 
-// ---------- BACK TO MODE ----------
+// ---------- BACK ----------
 function goBackToMode() {
     roomScreen.style.display = "none";
     joinScreen.style.display = "flex";
 }
 
-// ---------- ROOM CREATE / JOIN ----------
-function createRoom() { startRoom(true); }
-function joinRoom() { startRoom(false); }
+// ---------- CREATE / JOIN ----------
+function createRoom() {
+    startRoom(true);
+}
+
+function joinRoom() {
+    startRoom(false);
+}
 
 function startRoom(isCreate) {
-    CURRENT_ROOM = roomNameInput.value.trim();
+    ROOM_NAME = roomNameInput.value.trim();
+    ROOM_ID = roomIdInput.value.trim();
     MAX_USERS = parseInt(maxUsersInput.value);
 
-    if (!CURRENT_ROOM || CURRENT_ROOM.length < 3) {
-        alert("Enter valid room name (min 3 characters)");
+    const idRegex = /^[A-Za-z0-9]+$/;
+
+    if (!ROOM_NAME || ROOM_NAME.length < 3) {
+        alert("Enter valid Room Name (min 3 characters)");
         return;
     }
+
+    if (!ROOM_ID || !idRegex.test(ROOM_ID)) {
+        alert("Room ID must contain only letters and numbers");
+        return;
+    }
+
     if (!MAX_USERS || MAX_USERS < 2 || MAX_USERS > 20) {
         alert("Max users must be between 2 and 20");
         return;
@@ -125,26 +141,34 @@ async function initializeApp(isCreate) {
     myPeerId = "visio_" + Math.random().toString(36).substr(2, 9);
     peer = new Peer(myPeerId);
 
-    const roomRef = database.ref("rooms/" + CURRENT_ROOM);
+    const roomRef = database.ref("rooms/" + ROOM_ID);
 
     peer.on("open", id => {
         roomRef.once("value", snap => {
             if (snap.exists()) {
                 const data = snap.val();
+
                 if (data.mode !== CURRENT_MODE) {
-                    alert("This room is for another mode!");
-                    return location.reload();
+                    alert("This room is for a different mode!");
+                    location.reload();
+                    return;
                 }
+
                 if (Object.keys(data.users || {}).length >= data.maxUsers) {
                     alert("Room is full!");
-                    return location.reload();
+                    location.reload();
+                    return;
                 }
             } else {
                 if (!isCreate) {
-                    alert("Room not found!");
-                    return location.reload();
+                    alert("Room ID not found!");
+                    location.reload();
+                    return;
                 }
+
                 roomRef.set({
+                    roomName: ROOM_NAME,
+                    roomId: ROOM_ID,
                     mode: CURRENT_MODE,
                     maxUsers: MAX_USERS
                 });
@@ -154,6 +178,8 @@ async function initializeApp(isCreate) {
                 name: DISPLAY_NAME,
                 peerId: id
             });
+
+            roomRef.child("users/" + id).onDisconnect().remove();
 
             roomRef.child("users").on("child_added", snap => {
                 const user = snap.val();
@@ -210,7 +236,7 @@ function setupDataConnection(conn) {
 
         if (data.type === "file_meta") {
             receivedFiles[data.peerId] = { ...data, chunks: [], received: 0 };
-            displayMessage("System", `${data.sender} sending ${data.name}`, false);
+            displayMessage("System", `${data.sender} sent ${data.name}`, false);
         }
 
         if (data.type === "file_chunk") {
@@ -222,13 +248,13 @@ function setupDataConnection(conn) {
                 const blob = new Blob(file.chunks, { type: file.mime });
                 const url = URL.createObjectURL(blob);
 
-                const a = document.createElement("a");
-                a.href = url;
-                a.download = file.name;
-                a.textContent = "⬇ Download " + file.name;
-                a.style.color = "#38bdf8";
+                const link = document.createElement("a");
+                link.href = url;
+                link.download = file.name;
+                link.textContent = "⬇ Download " + file.name;
+                link.style.color = "#38bdf8";
 
-                messagesContainer.appendChild(a);
+                messagesContainer.appendChild(link);
                 delete receivedFiles[data.peerId];
             }
         }
