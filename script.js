@@ -1,6 +1,5 @@
 // ===============================
-// FINAL SCRIPT.JS (ALL IN ONE)
-// Join Mode + Video + Text + Files + Status + Modes
+// FINAL SCRIPT.JS (ALL FEATURES FIXED)
 // ===============================
 
 const firebaseConfig = {
@@ -15,7 +14,6 @@ const firebaseConfig = {
 
 firebase.initializeApp(firebaseConfig);
 const database = firebase.database();
-
 const ROOM_NAME = "Lobby";
 const onlineUsersRef = database.ref("onlineUsers/" + ROOM_NAME);
 
@@ -34,7 +32,6 @@ let JOIN_MODE = "both";
 
 const connections = {};
 const userNames = {};
-const userModes = {};
 const receivedFiles = {};
 const CHUNK_SIZE = 16000;
 
@@ -61,15 +58,24 @@ function getValidUsername() {
         if (!name) continue;
         name = name.trim();
         if (name.length <= 15 && regex.test(name)) return name;
-        alert("Invalid name! Only letters, numbers, one space, max 15 chars.");
+        alert("Invalid name!");
     }
 }
 
-// ---------- MODE ----------
+// ---------- MODE SELECTION ----------
 function selectMode(mode) {
     JOIN_MODE = mode;
     joinScreen.style.display = "none";
     mainApp.style.display = "block";
+
+    if (mode === "text") {
+        videoGrid.style.display = "none";
+    }
+    if (mode === "video") {
+        messagesContainer.style.display = "none";
+        messageForm.style.display = "none";
+    }
+
     initializeApp();
 }
 
@@ -100,12 +106,10 @@ async function initializeApp() {
         onlineUsersRef.on("child_added", snap => {
             const user = snap.val();
             userNames[user.peerId] = user.name;
-            userModes[user.peerId] = user.mode;
             addOnlineUser(user.peerId, user.name, user.mode);
 
             if (user.peerId !== id) {
                 connectToPeer(user.peerId); // chat always
-
                 if (JOIN_MODE !== "text" && user.mode !== "text") {
                     callPeer(user.peerId); // video only if both allow
                 }
@@ -150,14 +154,8 @@ function connectToPeer(id) {
 // ---------- DATA ----------
 function setupDataConnection(conn) {
     conn.on("data", data => {
-
-        if (data.type === "chat") {
-            displayMessage(data.user, data.text, false);
-        }
-
-        if (data.type === "media_status") {
-            updateMediaStatus(data.peerId, data.mic, data.cam);
-        }
+        if (data.type === "chat") displayMessage(data.user, data.text, false);
+        if (data.type === "media_status") updateMediaStatus(data.peerId, data.mic, data.cam);
 
         if (data.type === "image") {
             displayMessage(data.user, data.dataURL, false);
@@ -176,17 +174,12 @@ function setupDataConnection(conn) {
             if (file.received >= file.size) {
                 const blob = new Blob(file.chunks, { type: file.mime });
                 const url = URL.createObjectURL(blob);
-
                 const link = document.createElement("a");
                 link.href = url;
                 link.download = file.name;
                 link.innerText = "⬇ Download " + file.name;
                 link.style.color = "#38bdf8";
-
-                const div = document.createElement("div");
-                div.appendChild(link);
-                messagesContainer.appendChild(div);
-
+                messagesContainer.appendChild(link);
                 delete receivedFiles[data.peerId];
             }
         }
@@ -251,6 +244,8 @@ function displayMessage(user, text, mine) {
 
 messageForm.onsubmit = e => {
     e.preventDefault();
+    if (JOIN_MODE === "video") return;
+
     const msg = messageInput.value.trim();
     if (!msg) return;
 
@@ -309,7 +304,7 @@ fileInput.onchange = () => {
     readNextChunk();
 };
 
-// ---------- STATUS BROADCAST ----------
+// ---------- STATUS ----------
 function broadcastStatus() {
     const mic = localStream.getAudioTracks()[0].enabled;
     const cam = localStream.getVideoTracks()[0].enabled;
