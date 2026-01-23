@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Face to Face Chat - Lobby</title>
+    <title>VISIO – Face to Face Communication</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <link rel="stylesheet" href="style.css">
@@ -17,36 +17,37 @@
 </head>
 <body>
 
-<!-- MODE SELECTION -->
-<div id="mode-screen">
-    <h2>Select How You Want to Join</h2>
+<!-- MODE SELECTION SCREEN -->
+<div id="join-screen">
+    <h2>Welcome to <span style="color:#38bdf8;">VISIO</span></h2>
+    <p>Select how you want to join</p>
+
     <button class="mode-btn" onclick="selectMode('text')">💬 Text Only</button>
     <button class="mode-btn" onclick="selectMode('video')">🎥 Video Only</button>
     <button class="mode-btn" onclick="selectMode('both')">🎥💬 Video + Text</button>
-    <br><br>
-    <a href="index.html" class="cta-nav">🏠 Home</a>
 </div>
 
-<!-- ROOM SETUP -->
+<!-- ROOM CREATION / JOIN -->
 <div id="room-screen" style="display:none;">
     <h2 id="selected-mode-title"></h2>
 
-    <input type="text" id="room-name" placeholder="Enter Room Name">
-    <input type="number" id="max-users" placeholder="Max Members (2 - 20)" min="2" max="20">
+    <div class="room-box">
+        <input class="room-input" type="text" id="room-name" placeholder="Enter Room Name">
+        <input class="room-input" type="number" id="max-users" placeholder="Max Members (2 - 20)" min="2" max="20">
 
-    <button onclick="createRoom()">Create Room</button>
-    <button onclick="joinRoom()">Join Room</button>
+        <button class="room-btn create" onclick="createRoom()">Create Room</button>
+        <button class="room-btn join" onclick="joinRoom()">Join Room</button>
 
-    <br><br>
-    <button onclick="goBackToMode()">← Back</button>
-    <a href="index.html" class="cta-nav">🏠 Home</a>
+        <button class="room-btn back" onclick="goBackToMode()">← Back</button>
+        <a href="index.html" class="room-btn join" style="text-align:center;text-decoration:none;">🏠 Home</a>
+    </div>
 </div>
 
 <!-- MAIN APP -->
 <div id="main-app" style="display:none;">
 
 <nav class="navbar dashboard-nav">
-    <div class="nav-brand">Face to Face Chat</div>
+    <div class="nav-brand">VISIO</div>
     <div class="nav-links">
         <button class="cta-nav" onclick="leaveRoom()">← Back</button>
         <a href="index.html" class="cta-nav">🏠 Home</a>
