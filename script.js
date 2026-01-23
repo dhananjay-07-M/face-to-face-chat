@@ -1,5 +1,5 @@
 // ===============================
-// FINAL SCRIPT.JS (ALL FEATURES FIXED)
+// FINAL SCRIPT.JS (MODE CORRECT + CHAT FIXED + VIDEO FIXED)
 // ===============================
 
 const firebaseConfig = {
@@ -17,27 +17,17 @@ const database = firebase.database();
 const ROOM_NAME = "Lobby";
 const onlineUsersRef = database.ref("onlineUsers/" + ROOM_NAME);
 
-const peerConfig = {
-    config: {
-        iceServers: [
-            { urls: "stun:stun.l.google.com:19302" },
-            { urls: "stun:stun1.l.google.com:19302" }
-        ]
-    }
-};
-
 let localStream, peer, myPeerId;
 let DISPLAY_NAME = "";
 let JOIN_MODE = "both";
 
 const connections = {};
-const userNames = {};
 const receivedFiles = {};
 const CHUNK_SIZE = 16000;
 
-// UI
 const joinScreen = document.getElementById("join-screen");
 const mainApp = document.getElementById("main-app");
+
 const localVideo = document.getElementById("local-video");
 const videoGrid = document.getElementById("video-grid");
 const messagesContainer = document.getElementById("messages-container");
@@ -62,7 +52,7 @@ function getValidUsername() {
     }
 }
 
-// ---------- MODE SELECTION ----------
+// ---------- MODE ----------
 function selectMode(mode) {
     JOIN_MODE = mode;
     joinScreen.style.display = "none";
@@ -70,7 +60,10 @@ function selectMode(mode) {
 
     if (mode === "text") {
         videoGrid.style.display = "none";
+        micToggle.style.display = "none";
+        videoToggle.style.display = "none";
     }
+
     if (mode === "video") {
         messagesContainer.style.display = "none";
         messageForm.style.display = "none";
@@ -91,7 +84,7 @@ async function initializeApp() {
     }
 
     myPeerId = "user_" + Math.random().toString(36).substr(2, 9);
-    peer = new Peer(myPeerId, peerConfig);
+    peer = new Peer(myPeerId);
 
     peer.on("open", id => {
         onlineUsersRef.child(id).set({
@@ -101,18 +94,16 @@ async function initializeApp() {
             mic: true,
             cam: JOIN_MODE !== "text"
         });
+
         onlineUsersRef.child(id).onDisconnect().remove();
 
         onlineUsersRef.on("child_added", snap => {
             const user = snap.val();
-            userNames[user.peerId] = user.name;
             addOnlineUser(user.peerId, user.name, user.mode);
 
             if (user.peerId !== id) {
-                connectToPeer(user.peerId); // chat always
-                if (JOIN_MODE !== "text" && user.mode !== "text") {
-                    callPeer(user.peerId); // video only if both allow
-                }
+                if (JOIN_MODE !== "video") connectToPeer(user.peerId);
+                if (JOIN_MODE !== "text" && user.mode !== "text") callPeer(user.peerId);
             }
         });
 
@@ -136,7 +127,7 @@ async function initializeApp() {
     peer.on("connection", setupDataConnection);
 }
 
-// ---------- CONNECTION ----------
+// ---------- PEER ----------
 function callPeer(id) {
     if (connections[id]?.media) return;
     const call = peer.call(id, localStream);
@@ -146,7 +137,7 @@ function callPeer(id) {
 
 function connectToPeer(id) {
     if (connections[id]?.data) return;
-    const conn = peer.connect(id, { reliable: true });
+    const conn = peer.connect(id);
     connections[id] = { ...connections[id], data: conn };
     setupDataConnection(conn);
 }
@@ -154,35 +145,10 @@ function connectToPeer(id) {
 // ---------- DATA ----------
 function setupDataConnection(conn) {
     conn.on("data", data => {
-        if (data.type === "chat") displayMessage(data.user, data.text, false);
+        if (data.type === "chat" && JOIN_MODE !== "video") {
+            displayMessage(data.user, data.text, false);
+        }
         if (data.type === "media_status") updateMediaStatus(data.peerId, data.mic, data.cam);
-
-        if (data.type === "image") {
-            displayMessage(data.user, data.dataURL, false);
-        }
-
-        if (data.type === "file_meta") {
-            receivedFiles[data.peerId] = { ...data, chunks: [], received: 0 };
-            displayMessage("System", `${data.sender} sending ${data.name}`, false);
-        }
-
-        if (data.type === "file_chunk") {
-            const file = receivedFiles[data.peerId];
-            file.chunks.push(data.chunk);
-            file.received += data.chunk.byteLength;
-
-            if (file.received >= file.size) {
-                const blob = new Blob(file.chunks, { type: file.mime });
-                const url = URL.createObjectURL(blob);
-                const link = document.createElement("a");
-                link.href = url;
-                link.download = file.name;
-                link.innerText = "⬇ Download " + file.name;
-                link.style.color = "#38bdf8";
-                messagesContainer.appendChild(link);
-                delete receivedFiles[data.peerId];
-            }
-        }
     });
 }
 
@@ -197,11 +163,10 @@ function addVideoStream(id, stream) {
     const video = document.createElement("video");
     video.srcObject = stream;
     video.autoplay = true;
-    video.playsInline = true;
 
     const name = document.createElement("div");
     name.className = "name-label";
-    name.innerText = userNames[id];
+    name.innerText = id;
 
     const status = document.createElement("div");
     status.className = "media-status";
@@ -226,18 +191,7 @@ function removeVideoStream(id) {
 function displayMessage(user, text, mine) {
     const div = document.createElement("div");
     div.className = mine ? "my-message" : "remote-message";
-
-    if (typeof text === "string" && text.startsWith("data:image")) {
-        const img = document.createElement("img");
-        img.src = text;
-        img.style.maxWidth = "200px";
-        img.style.borderRadius = "8px";
-        div.innerHTML = `<b>${user}</b><br>`;
-        div.appendChild(img);
-    } else {
-        div.innerHTML = `<b>${user}</b>: ${text}`;
-    }
-
+    div.innerHTML = `<b>${user}</b>: ${text}`;
     messagesContainer.appendChild(div);
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
 }
@@ -256,61 +210,13 @@ messageForm.onsubmit = e => {
     messageInput.value = "";
 };
 
-// ---------- FILE ----------
-fileBtn.onclick = () => fileInput.click();
-
-fileInput.onchange = () => {
-    const file = fileInput.files[0];
-    if (!file) return;
-
-    if (file.type.startsWith("image/")) {
-        const reader = new FileReader();
-        reader.onload = e => {
-            Object.values(connections).forEach(c =>
-                c.data?.send({ type: "image", user: DISPLAY_NAME, dataURL: e.target.result })
-            );
-            displayMessage(DISPLAY_NAME, e.target.result, true);
-        };
-        reader.readAsDataURL(file);
-    }
-
-    const meta = {
-        type: "file_meta",
-        name: file.name,
-        size: file.size,
-        mime: file.type,
-        sender: DISPLAY_NAME,
-        peerId: myPeerId
-    };
-
-    Object.values(connections).forEach(c => c.data?.send(meta));
-
-    const reader = new FileReader();
-    let offset = 0;
-
-    reader.onload = e => {
-        Object.values(connections).forEach(c =>
-            c.data?.send({ type: "file_chunk", peerId: myPeerId, chunk: e.target.result })
-        );
-        offset += e.target.result.byteLength;
-        if (offset < file.size) readNextChunk();
-    };
-
-    function readNextChunk() {
-        const slice = file.slice(offset, offset + CHUNK_SIZE);
-        reader.readAsArrayBuffer(slice);
-    }
-
-    readNextChunk();
-};
-
 // ---------- STATUS ----------
 function broadcastStatus() {
+    if (!localStream) return;
     const mic = localStream.getAudioTracks()[0].enabled;
     const cam = localStream.getVideoTracks()[0].enabled;
 
     onlineUsersRef.child(myPeerId).update({ mic, cam });
-
     Object.values(connections).forEach(c =>
         c.data?.send({ type: "media_status", peerId: myPeerId, mic, cam })
     );
@@ -339,11 +245,8 @@ function removeOnlineUser(id) {
     if (el) el.remove();
 }
 
-// ---------- BACK & EXIT ----------
-window.onpopstate = () => location.reload();
-
+// ---------- EXIT ----------
 leaveCall.onclick = () => {
     onlineUsersRef.child(myPeerId).remove();
-    if (peer) peer.destroy();
     location.reload();
 };
