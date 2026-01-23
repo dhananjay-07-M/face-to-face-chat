@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Face to Face Chat - Lobby</title>
+    <title>Face to Face Chat - Dashboard</title>
 
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
@@ -17,22 +17,30 @@
 </head>
 <body>
 
-<!-- MODE SELECTION -->
-<div id="join-screen">
-    <h2>Select Join Mode</h2>
-    <button class="mode-btn" onclick="selectMode('text')">💬 Text Only</button>
-    <button class="mode-btn" onclick="selectMode('video')">🎥 Video Only</button>
-    <button class="mode-btn" onclick="selectMode('both')">🎥💬 Video + Text</button>
-</div>
+<!-- MODE + ROOM SETUP SCREEN -->
+<div id="join-screen" class="join-panel">
+    <h2>Join or Create a Room</h2>
 
-<!-- ROOM SETUP -->
-<div id="room-screen" style="display:none;">
-    <h2>Create / Join Room</h2>
-    <input type="text" id="room-name" placeholder="Enter Room Name">
-    <input type="number" id="max-users" placeholder="Max Members" min="2" max="20">
-    <button class="mode-btn" onclick="enterRoom()">Enter Room</button>
-    <button class="mode-btn" onclick="backToMode()">← Back</button>
-    <button class="mode-btn" onclick="location.href='index.html'">🏠 Home</button>
+    <div class="mode-box">
+        <p>Select Mode:</p>
+        <button class="mode-btn" onclick="selectMode('text')">💬 Text Only</button>
+        <button class="mode-btn" onclick="selectMode('video')">🎥 Video Only</button>
+        <button class="mode-btn" onclick="selectMode('both')">🎥💬 Video + Text</button>
+    </div>
+
+    <div class="room-box">
+        <input type="text" id="room-name" placeholder="Enter Room Name" maxlength="20">
+        <input type="number" id="max-users" placeholder="Max Members" min="2" max="20">
+    </div>
+
+    <div class="action-box">
+        <button class="cta-nav" onclick="createRoom()">Create Room</button>
+        <button class="cta-nav" onclick="joinRoom()">Join Room</button>
+    </div>
+
+    <div class="nav-box">
+        <a href="index.html" class="cta-nav">🏠 Home</a>
+    </div>
 </div>
 
 <!-- MAIN APP -->
@@ -41,8 +49,8 @@
 <nav class="navbar dashboard-nav">
     <div class="nav-brand">Face to Face Chat</div>
     <div class="nav-links">
-        <button class="cta-nav" onclick="location.reload()">← Back</button>
-        <a href="index.html" class="cta-nav">Home</a>
+        <button class="cta-nav" onclick="goBack()">← Back</button>
+        <a href="index.html" class="cta-nav">Exit</a>
     </div>
 </nav>
 
@@ -66,7 +74,7 @@
         <div id="messages-container"></div>
 
         <form id="message-form">
-            <input type="text" id="message-input" placeholder="Type a message..." required>
+            <input type="text" id="message-input" placeholder="Type a message...">
 
             <input type="file" id="file-input" hidden>
             <button type="button" id="file-btn" class="control-btn">📎</button>
@@ -89,7 +97,6 @@
         </form>
 
     </main>
-
 </div>
 </div>
 
