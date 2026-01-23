@@ -1,6 +1,6 @@
 // ===============================
-// FINAL SCRIPT.JS PART 1 (FIXED)
-// Join Mode + Video + Chat + Files + Live Status Sync
+// FINAL SCRIPT.JS (ALL IN ONE)
+// Join Mode + Video + Text + Files + Status + Modes
 // ===============================
 
 const firebaseConfig = {
@@ -38,9 +38,9 @@ const userModes = {};
 const receivedFiles = {};
 const CHUNK_SIZE = 16000;
 
+// UI
 const joinScreen = document.getElementById("join-screen");
 const mainApp = document.getElementById("main-app");
-
 const localVideo = document.getElementById("local-video");
 const videoGrid = document.getElementById("video-grid");
 const messagesContainer = document.getElementById("messages-container");
@@ -57,11 +57,11 @@ const fileBtn = document.getElementById("file-btn");
 function getValidUsername() {
     const regex = /^[A-Za-z0-9]+( [A-Za-z0-9]+)?$/;
     while (true) {
-        let name = prompt("Enter your name (letters/numbers, one space, max 15):");
+        let name = prompt("Enter your name (letters, numbers, one space, max 15):");
         if (!name) continue;
         name = name.trim();
         if (name.length <= 15 && regex.test(name)) return name;
-        alert("Invalid name!");
+        alert("Invalid name! Only letters, numbers, one space, max 15 chars.");
     }
 }
 
@@ -104,9 +104,10 @@ async function initializeApp() {
             addOnlineUser(user.peerId, user.name, user.mode);
 
             if (user.peerId !== id) {
-                connectToPeer(user.peerId); // always connect chat
+                connectToPeer(user.peerId); // chat always
+
                 if (JOIN_MODE !== "text" && user.mode !== "text") {
-                    callPeer(user.peerId); // only video if both allow
+                    callPeer(user.peerId); // video only if both allow
                 }
             }
         });
@@ -149,8 +150,46 @@ function connectToPeer(id) {
 // ---------- DATA ----------
 function setupDataConnection(conn) {
     conn.on("data", data => {
-        if (data.type === "chat") displayMessage(data.user, data.text, false);
-        if (data.type === "media_status") updateMediaStatus(data.peerId, data.mic, data.cam);
+
+        if (data.type === "chat") {
+            displayMessage(data.user, data.text, false);
+        }
+
+        if (data.type === "media_status") {
+            updateMediaStatus(data.peerId, data.mic, data.cam);
+        }
+
+        if (data.type === "image") {
+            displayMessage(data.user, data.dataURL, false);
+        }
+
+        if (data.type === "file_meta") {
+            receivedFiles[data.peerId] = { ...data, chunks: [], received: 0 };
+            displayMessage("System", `${data.sender} sending ${data.name}`, false);
+        }
+
+        if (data.type === "file_chunk") {
+            const file = receivedFiles[data.peerId];
+            file.chunks.push(data.chunk);
+            file.received += data.chunk.byteLength;
+
+            if (file.received >= file.size) {
+                const blob = new Blob(file.chunks, { type: file.mime });
+                const url = URL.createObjectURL(blob);
+
+                const link = document.createElement("a");
+                link.href = url;
+                link.download = file.name;
+                link.innerText = "⬇ Download " + file.name;
+                link.style.color = "#38bdf8";
+
+                const div = document.createElement("div");
+                div.appendChild(link);
+                messagesContainer.appendChild(div);
+
+                delete receivedFiles[data.peerId];
+            }
+        }
     });
 }
 
@@ -194,7 +233,18 @@ function removeVideoStream(id) {
 function displayMessage(user, text, mine) {
     const div = document.createElement("div");
     div.className = mine ? "my-message" : "remote-message";
-    div.innerHTML = `<b>${user}</b>: ${text}`;
+
+    if (typeof text === "string" && text.startsWith("data:image")) {
+        const img = document.createElement("img");
+        img.src = text;
+        img.style.maxWidth = "200px";
+        img.style.borderRadius = "8px";
+        div.innerHTML = `<b>${user}</b><br>`;
+        div.appendChild(img);
+    } else {
+        div.innerHTML = `<b>${user}</b>: ${text}`;
+    }
+
     messagesContainer.appendChild(div);
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
 }
@@ -209,6 +259,54 @@ messageForm.onsubmit = e => {
         c.data?.send({ type: "chat", user: DISPLAY_NAME, text: msg })
     );
     messageInput.value = "";
+};
+
+// ---------- FILE ----------
+fileBtn.onclick = () => fileInput.click();
+
+fileInput.onchange = () => {
+    const file = fileInput.files[0];
+    if (!file) return;
+
+    if (file.type.startsWith("image/")) {
+        const reader = new FileReader();
+        reader.onload = e => {
+            Object.values(connections).forEach(c =>
+                c.data?.send({ type: "image", user: DISPLAY_NAME, dataURL: e.target.result })
+            );
+            displayMessage(DISPLAY_NAME, e.target.result, true);
+        };
+        reader.readAsDataURL(file);
+    }
+
+    const meta = {
+        type: "file_meta",
+        name: file.name,
+        size: file.size,
+        mime: file.type,
+        sender: DISPLAY_NAME,
+        peerId: myPeerId
+    };
+
+    Object.values(connections).forEach(c => c.data?.send(meta));
+
+    const reader = new FileReader();
+    let offset = 0;
+
+    reader.onload = e => {
+        Object.values(connections).forEach(c =>
+            c.data?.send({ type: "file_chunk", peerId: myPeerId, chunk: e.target.result })
+        );
+        offset += e.target.result.byteLength;
+        if (offset < file.size) readNextChunk();
+    };
+
+    function readNextChunk() {
+        const slice = file.slice(offset, offset + CHUNK_SIZE);
+        reader.readAsArrayBuffer(slice);
+    }
+
+    readNextChunk();
 };
 
 // ---------- STATUS BROADCAST ----------
@@ -246,112 +344,11 @@ function removeOnlineUser(id) {
     if (el) el.remove();
 }
 
-// ---------- LEAVE ----------
-leaveCall.onclick = () => {
-    onlineUsersRef.child(myPeerId).remove();
-    location.reload();
-};
-// ===============================
-// FINAL SCRIPT.JS PART 2
-// Image + File Transfer + Download + Back Handling
-// ===============================
+// ---------- BACK & EXIT ----------
+window.onpopstate = () => location.reload();
 
-// ---------- FILE BUTTON ----------
-fileBtn.onclick = () => fileInput.click();
-
-fileInput.onchange = () => {
-    const file = fileInput.files[0];
-    if (!file) return;
-
-    // IMAGE PREVIEW
-    if (file.type.startsWith("image/")) {
-        const reader = new FileReader();
-        reader.onload = e => {
-            Object.values(connections).forEach(c =>
-                c.data?.send({
-                    type: "image",
-                    user: DISPLAY_NAME,
-                    dataURL: e.target.result
-                })
-            );
-            displayMessage(DISPLAY_NAME, "[Image Sent]", true);
-        };
-        reader.readAsDataURL(file);
-    }
-
-    // FILE META
-    const meta = {
-        type: "file_meta",
-        name: file.name,
-        size: file.size,
-        mime: file.type,
-        sender: DISPLAY_NAME,
-        peerId: myPeerId
-    };
-
-    Object.values(connections).forEach(c => c.data?.send(meta));
-
-    const reader = new FileReader();
-    let offset = 0;
-
-    reader.onload = e => {
-        Object.values(connections).forEach(c =>
-            c.data?.send({
-                type: "file_chunk",
-                peerId: myPeerId,
-                chunk: e.target.result
-            })
-        );
-
-        offset += e.target.result.byteLength;
-        if (offset < file.size) readNextChunk();
-    };
-
-    function readNextChunk() {
-        const slice = file.slice(offset, offset + CHUNK_SIZE);
-        reader.readAsArrayBuffer(slice);
-    }
-
-    readNextChunk();
-};
-
-// ---------- RECEIVE FILE ----------
-function handleIncomingFile(data) {
-    receivedFiles[data.peerId] = { ...data, chunks: [], received: 0 };
-}
-
-function handleIncomingChunk(data) {
-    const file = receivedFiles[data.peerId];
-    file.chunks.push(data.chunk);
-    file.received += data.chunk.byteLength;
-
-    if (file.received >= file.size) {
-        const blob = new Blob(file.chunks, { type: file.mime });
-        const url = URL.createObjectURL(blob);
-
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = file.name;
-        link.innerText = "⬇ Download " + file.name;
-        link.style.color = "#38bdf8";
-
-        const div = document.createElement("div");
-        div.appendChild(link);
-        messagesContainer.appendChild(div);
-
-        delete receivedFiles[data.peerId];
-    }
-}
-
-// ---------- BACK BUTTON SUPPORT ----------
-window.onpopstate = () => {
-    location.reload(); // shows join screen again
-};
-
-// ---------- EXIT CLEANUP ----------
 leaveCall.onclick = () => {
     onlineUsersRef.child(myPeerId).remove();
     if (peer) peer.destroy();
     location.reload();
 };
-
