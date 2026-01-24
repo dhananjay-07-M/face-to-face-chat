@@ -1,9 +1,8 @@
 // ===============================
-// VISIO BACKEND - PART 1
-// Core Room System + Mode + Creator + Validation
+// VISIO - SCRIPT.JS (PART 1)
+// Mode + Create/Join + Room Info + Creator + Firebase + Peer Setup
 // ===============================
 
-// Firebase Config
 const firebaseConfig = {
     apiKey: "AIzaSyDkrzN0604XsYRipUbPF9iiLXy8aaOji3o",
     authDomain: "dhananjay-chat-app.firebaseapp.com",
@@ -17,33 +16,38 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const database = firebase.database();
 
-// Global State
 let CURRENT_MODE = "";
 let ROOM_NAME = "";
 let ROOM_ID = "";
 let MAX_USERS = 0;
+let CREATOR = "";
 let DISPLAY_NAME = "";
-let IS_CREATOR = false;
 
 let peer, myPeerId, localStream;
+
 const connections = {};
 const userNames = {};
 
-// Screens
+// UI SCREENS
 const joinScreen = document.getElementById("join-screen");
 const actionScreen = document.getElementById("action-screen");
 const createScreen = document.getElementById("create-screen");
 const joinRoomScreen = document.getElementById("join-room-screen");
 const mainApp = document.getElementById("main-app");
 
-// Inputs
+// INPUTS
 const roomNameInput = document.getElementById("room-name");
 const roomIdInput = document.getElementById("room-id");
 const maxUsersInput = document.getElementById("max-users");
 const joinRoomIdInput = document.getElementById("join-room-id");
 const modeTitle = document.getElementById("mode-title");
 
-// Username Validation
+// ROOM INFO UI
+const roomInfoName = document.getElementById("room-info-name");
+const roomInfoId = document.getElementById("room-info-id");
+const roomInfoCreator = document.getElementById("room-info-creator");
+
+// ---------- USER NAME ----------
 function getValidUsername() {
     const regex = /^[A-Za-z0-9 ]{1,15}$/;
     while (true) {
@@ -51,11 +55,11 @@ function getValidUsername() {
         if (!name) continue;
         name = name.trim();
         if (regex.test(name)) return name;
-        alert("Invalid name! Use only letters & numbers.");
+        alert("Invalid name!");
     }
 }
 
-// Mode Select
+// ---------- MODE ----------
 function selectMode(mode) {
     CURRENT_MODE = mode;
     joinScreen.style.display = "none";
@@ -67,7 +71,7 @@ function selectMode(mode) {
         "Video + Text Mode";
 }
 
-// Navigation
+// ---------- NAV FLOW ----------
 function showCreate() {
     actionScreen.style.display = "none";
     createScreen.style.display = "flex";
@@ -89,7 +93,7 @@ function backToAction() {
     actionScreen.style.display = "flex";
 }
 
-// Create Room
+// ---------- CREATE ROOM ----------
 function createRoom() {
     ROOM_NAME = roomNameInput.value.trim();
     ROOM_ID = roomIdInput.value.trim();
@@ -97,26 +101,24 @@ function createRoom() {
 
     const idRegex = /^[A-Za-z0-9]+$/;
 
-    if (!ROOM_NAME || ROOM_NAME.length < 3) return alert("Room name min 3 characters");
-    if (!ROOM_ID || !idRegex.test(ROOM_ID)) return alert("Room ID: letters & numbers only");
-    if (!MAX_USERS || MAX_USERS < 2 || MAX_USERS > 20) return alert("Max users 2 to 20");
+    if (!ROOM_NAME || ROOM_NAME.length < 3) return alert("Enter valid Room Name");
+    if (!ROOM_ID || !idRegex.test(ROOM_ID)) return alert("Room ID only letters & numbers");
+    if (!MAX_USERS || MAX_USERS < 2 || MAX_USERS > 20) return alert("Max users 2-20");
 
-    IS_CREATOR = true;
     startRoom(true);
 }
 
-// Join Room
+// ---------- JOIN ROOM ----------
 function joinRoom() {
     ROOM_ID = joinRoomIdInput.value.trim();
     const idRegex = /^[A-Za-z0-9]+$/;
 
     if (!ROOM_ID || !idRegex.test(ROOM_ID)) return alert("Enter valid Room ID");
 
-    IS_CREATOR = false;
     startRoom(false);
 }
 
-// Start Room
+// ---------- START ROOM ----------
 function startRoom(isCreate) {
     DISPLAY_NAME = getValidUsername();
 
@@ -136,7 +138,7 @@ function startRoom(isCreate) {
                 const data = snap.val();
 
                 if (data.mode !== CURRENT_MODE) {
-                    alert("This room is in different mode!");
+                    alert("This room is for a different mode!");
                     location.reload();
                     return;
                 }
@@ -146,6 +148,9 @@ function startRoom(isCreate) {
                     location.reload();
                     return;
                 }
+
+                CREATOR = data.creator;
+                ROOM_NAME = data.roomName;
             } else {
                 if (!isCreate) {
                     alert("Room ID not found!");
@@ -153,20 +158,26 @@ function startRoom(isCreate) {
                     return;
                 }
 
+                CREATOR = DISPLAY_NAME;
+
                 roomRef.set({
                     roomName: ROOM_NAME,
                     roomId: ROOM_ID,
                     mode: CURRENT_MODE,
                     maxUsers: MAX_USERS,
-                    creator: DISPLAY_NAME,
-                    createdAt: Date.now()
+                    creator: CREATOR
                 });
             }
 
+            // Show Room Info
+            roomInfoName.innerText = "Room: " + ROOM_NAME;
+            roomInfoId.innerText = "ID: " + ROOM_ID;
+            roomInfoCreator.innerText = "Creator: " + CREATOR;
+
+            // Register User
             roomRef.child("users/" + id).set({
                 name: DISPLAY_NAME,
-                peerId: id,
-                isCreator: IS_CREATOR
+                peerId: id
             });
 
             roomRef.child("users/" + id).onDisconnect().remove();
@@ -183,16 +194,6 @@ function startRoom(isCreate) {
         });
     });
 
-    if (CURRENT_MODE !== "text") {
-        navigator.mediaDevices.getUserMedia({
-            video: { width: 1280, height: 720, frameRate: 30 },
-            audio: { echoCancellation: true, noiseSuppression: true }
-        }).then(stream => {
-            localStream = stream;
-            document.getElementById("local-video").srcObject = stream;
-        });
-    }
-
     peer.on("call", call => {
         if (CURRENT_MODE === "text") return;
         call.answer(localStream);
@@ -200,10 +201,17 @@ function startRoom(isCreate) {
     });
 
     peer.on("connection", setupDataConnection);
+
+    if (CURRENT_MODE !== "text") {
+        navigator.mediaDevices.getUserMedia({ video: true, audio: true }).then(stream => {
+            localStream = stream;
+            document.getElementById("local-video").srcObject = stream;
+        });
+    }
 }
 // ===============================
-// VISIO BACKEND - PART 2
-// Video Engine + Camera Switch + Mic + Chat + Online Users
+// VISIO - SCRIPT.JS (PART 2)
+// Video + Chat + Online Users + Media Status + Mode Isolation
 // ===============================
 
 const videoGrid = document.getElementById("video-grid");
@@ -214,33 +222,29 @@ const micToggle = document.getElementById("mic-toggle");
 const videoToggle = document.getElementById("video-toggle");
 const leaveCall = document.getElementById("leave-call");
 const onlineUsersList = document.getElementById("online-users-list");
-const fileInput = document.getElementById("file-input");
-const fileBtn = document.getElementById("file-btn");
 
-let currentCamera = "user"; // front camera
-let videoTrack, audioTrack;
+function applyModeUI() {
+    document.body.classList.remove("video-only", "text-only");
+    if (CURRENT_MODE === "video") document.body.classList.add("video-only");
+    if (CURRENT_MODE === "text") document.body.classList.add("text-only");
+}
 
-// --------- CONNECT PEERS ----------
+// ---------- PEER CONNECTION ----------
 function callPeer(id) {
     if (connections[id]?.media) return;
-
     const call = peer.call(id, localStream);
     connections[id] = { media: call };
-
-    call.on("stream", stream => {
-        addVideoStream(id, stream);
-    });
+    call.on("stream", stream => addVideoStream(id, stream));
 }
 
 function connectToPeer(id) {
     if (connections[id]?.data) return;
-
     const conn = peer.connect(id, { reliable: true });
     connections[id] = { ...connections[id], data: conn };
     setupDataConnection(conn);
 }
 
-// --------- DATA CHANNEL ----------
+// ---------- DATA CHANNEL ----------
 function setupDataConnection(conn) {
     conn.on("data", data => {
 
@@ -252,13 +256,10 @@ function setupDataConnection(conn) {
             updateMediaStatus(data.peerId, data.mic, data.cam);
         }
 
-        if (data.type === "user_joined") {
-            addOnlineUser(data.peerId, data.name);
-        }
     });
 }
 
-// --------- VIDEO GRID ----------
+// ---------- VIDEO GRID ----------
 function addVideoStream(id, stream) {
     if (document.getElementById("wrap-" + id)) return;
 
@@ -273,7 +274,7 @@ function addVideoStream(id, stream) {
 
     const name = document.createElement("div");
     name.className = "name-label";
-    name.innerText = userNames[id] || "User";
+    name.innerText = userNames[id];
 
     const status = document.createElement("div");
     status.className = "media-status";
@@ -283,61 +284,14 @@ function addVideoStream(id, stream) {
     videoGrid.appendChild(wrapper);
 }
 
-// --------- MIC & CAMERA STATUS ----------
+// ---------- MEDIA STATUS ----------
 function updateMediaStatus(id, mic, cam) {
     const el = document.getElementById("status-" + id);
     if (!el) return;
     el.innerText = (!mic ? "🔇 " : "") + (!cam ? "🚫" : "");
 }
 
-function broadcastStatus() {
-    if (!localStream) return;
-
-    const mic = audioTrack.enabled;
-    const cam = videoTrack.enabled;
-
-    Object.values(connections).forEach(c =>
-        c.data?.send({ type: "media_status", peerId: myPeerId, mic, cam })
-    );
-}
-
-// --------- MIC TOGGLE ----------
-micToggle.onclick = () => {
-    audioTrack.enabled = !audioTrack.enabled;
-    broadcastStatus();
-};
-
-// --------- VIDEO TOGGLE ----------
-videoToggle.onclick = () => {
-    videoTrack.enabled = !videoTrack.enabled;
-    broadcastStatus();
-};
-
-// --------- CAMERA SWITCH (FRONT / BACK) ----------
-async function switchCamera() {
-    currentCamera = currentCamera === "user" ? "environment" : "user";
-
-    const newStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: currentCamera },
-        audio: true
-    });
-
-    const newVideoTrack = newStream.getVideoTracks()[0];
-    const sender = Object.values(peer.connections)
-        .flat()
-        .find(s => s.peerConnection?.getSenders);
-
-    sender?.peerConnection.getSenders()
-        .find(s => s.track.kind === "video")
-        .replaceTrack(newVideoTrack);
-
-    localStream.getTracks().forEach(t => t.stop());
-    localStream = newStream;
-    videoTrack = newVideoTrack;
-    document.getElementById("local-video").srcObject = localStream;
-}
-
-// --------- CHAT ----------
+// ---------- CHAT ----------
 function displayMessage(user, text, mine) {
     const div = document.createElement("div");
     div.className = mine ? "my-message" : "remote-message";
@@ -354,159 +308,190 @@ messageForm.onsubmit = e => {
     if (!msg) return;
 
     displayMessage(DISPLAY_NAME, msg, true);
-
     Object.values(connections).forEach(c =>
         c.data?.send({ type: "chat", user: DISPLAY_NAME, text: msg })
     );
-
     messageInput.value = "";
 };
 
-// --------- ONLINE USERS ----------
-function addOnlineUser(id, name) {
-    if (document.getElementById("user-" + id)) return;
+// ---------- MIC & CAMERA ----------
+function broadcastStatus() {
+    if (!localStream) return;
 
+    const mic = localStream.getAudioTracks()[0].enabled;
+    const cam = localStream.getVideoTracks()[0].enabled;
+
+    Object.values(connections).forEach(c =>
+        c.data?.send({ type: "media_status", peerId: myPeerId, mic, cam })
+    );
+}
+
+micToggle.onclick = () => {
+    localStream.getAudioTracks()[0].enabled = !localStream.getAudioTracks()[0].enabled;
+    broadcastStatus();
+};
+
+videoToggle.onclick = () => {
+    localStream.getVideoTracks()[0].enabled = !localStream.getVideoTracks()[0].enabled;
+    broadcastStatus();
+};
+
+// ---------- ONLINE USERS ----------
+function addOnlineUser(id, name) {
     const p = document.createElement("p");
     p.id = "user-" + id;
     p.innerText = "🟢 " + name;
     onlineUsersList.appendChild(p);
 }
 
-// --------- EXIT ----------
+// ---------- EXIT ----------
 function leaveRoom() {
     if (peer) peer.destroy();
-    if (localStream) localStream.getTracks().forEach(t => t.stop());
     location.reload();
 }
 
 leaveCall.onclick = leaveRoom;
 // ===============================
-// VISIO BACKEND - PART 3
-// Screen Share + Reconnect + Room Lock + Quality Boost
+// VISIO - SCRIPT.JS (PART 3)
+// Camera Switch + File Share + Room Info + Creator + Quality + Stability
 // ===============================
 
-let isScreenSharing = false;
-let screenTrack = null;
-let isCreator = false;
+// ---------- CAMERA SWITCH (MOBILE FRONT/BACK) ----------
+let currentCamera = "user";
 
-// ---------- ROOM INFO SYNC ----------
-function broadcastRoomInfo() {
-    const info = {
-        type: "room_info",
-        roomName: ROOM_NAME,
-        roomId: ROOM_ID,
-        creator: DISPLAY_NAME
-    };
+async function switchCamera() {
+    if (!localStream) return;
 
-    Object.values(connections).forEach(c => c.data?.send(info));
-}
+    currentCamera = currentCamera === "user" ? "environment" : "user";
 
-// ---------- SCREEN SHARE ----------
-async function toggleScreenShare() {
-    if (!isScreenSharing) {
-        const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
-        screenTrack = stream.getVideoTracks()[0];
-
-        replaceVideoTrack(screenTrack);
-        isScreenSharing = true;
-
-        screenTrack.onended = () => stopScreenShare();
-    } else {
-        stopScreenShare();
-    }
-}
-
-function stopScreenShare() {
-    if (!screenTrack) return;
-    replaceVideoTrack(videoTrack);
-    screenTrack.stop();
-    isScreenSharing = false;
-}
-
-function replaceVideoTrack(newTrack) {
-    Object.values(peer.connections).forEach(conns => {
-        conns.forEach(conn => {
-            conn.peerConnection.getSenders().forEach(sender => {
-                if (sender.track && sender.track.kind === "video") {
-                    sender.replaceTrack(newTrack);
-                }
-            });
-        });
+    const newStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: currentCamera },
+        audio: true
     });
 
-    const newStream = new MediaStream([newTrack, audioTrack]);
+    const videoTrack = newStream.getVideoTracks()[0];
+    const sender = Object.values(connections).find(c => c.media)?.media.peerConnection
+        .getSenders().find(s => s.track.kind === "video");
+
+    if (sender) sender.replaceTrack(videoTrack);
+
+    localStream.getTracks().forEach(t => t.stop());
+    localStream = newStream;
     document.getElementById("local-video").srcObject = newStream;
 }
 
-// ---------- CREATOR LOCK ----------
-function lockRoom() {
-    if (!isCreator) return alert("Only Creator can lock room");
+// ---------- FILE SHARE ----------
+const fileInput = document.getElementById("file-input");
+const fileBtn = document.getElementById("file-btn");
+const receivedFiles = {};
+const CHUNK_SIZE = 16000;
 
-    Object.values(connections).forEach(c =>
-        c.data?.send({ type: "room_lock" })
-    );
-}
+fileBtn.onclick = () => fileInput.click();
 
-// ---------- NOISE SUPPRESSION ----------
-async function enableNoiseSuppression() {
-    const stream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-            noiseSuppression: true,
-            echoCancellation: true,
-            autoGainControl: true
-        },
-        video: true
-    });
+fileInput.onchange = () => {
+    const file = fileInput.files[0];
+    if (!file) return;
 
-    localStream.getTracks().forEach(t => t.stop());
-    localStream = stream;
+    const meta = {
+        type: "file_meta",
+        name: file.name,
+        size: file.size,
+        mime: file.type,
+        sender: DISPLAY_NAME,
+        peerId: myPeerId
+    };
 
-    audioTrack = stream.getAudioTracks()[0];
-    videoTrack = stream.getVideoTracks()[0];
+    Object.values(connections).forEach(c => c.data?.send(meta));
 
-    document.getElementById("local-video").srcObject = stream;
-    broadcastStatus();
-}
+    const reader = new FileReader();
+    let offset = 0;
 
-// ---------- AUTO RECONNECT ----------
-window.addEventListener("offline", () => {
-    alert("Connection lost. Reconnecting...");
-});
+    reader.onload = e => {
+        Object.values(connections).forEach(c =>
+            c.data?.send({ type: "file_chunk", peerId: myPeerId, chunk: e.target.result })
+        );
+        offset += e.target.result.byteLength;
+        if (offset < file.size) readNextChunk();
+    };
 
-window.addEventListener("online", () => {
-    location.reload();
-});
-
-// ---------- DATA HANDLER EXTENSION ----------
-function handleAdvancedData(data) {
-
-    if (data.type === "room_info") {
-        document.getElementById("room-name-ui").innerText = data.roomName;
-        document.getElementById("room-id-ui").innerText = data.roomId;
-        document.getElementById("creator-ui").innerText = data.creator;
+    function readNextChunk() {
+        const slice = file.slice(offset, offset + CHUNK_SIZE);
+        reader.readAsArrayBuffer(slice);
     }
 
-    if (data.type === "room_lock") {
-        alert("Room locked by creator. No new users allowed.");
-    }
-}
-
-// Attach to existing data handler
-const oldSetup = setupDataConnection;
-setupDataConnection = function (conn) {
-    oldSetup(conn);
-
-    conn.on("data", data => {
-        handleAdvancedData(data);
-    });
+    readNextChunk();
 };
 
-// ---------- CREATOR DETECTION ----------
-function markCreator() {
-    if (isCreator) return;
-    isCreator = true;
-    broadcastRoomInfo();
+// ---------- FILE RECEIVE ----------
+function setupDataConnection(conn) {
+    conn.on("data", data => {
+
+        if (data.type === "chat" && CURRENT_MODE !== "video") {
+            displayMessage(data.user, data.text, false);
+        }
+
+        if (data.type === "file_meta") {
+            receivedFiles[data.peerId] = { ...data, chunks: [], received: 0 };
+            displayMessage("System", `${data.sender} sent ${data.name}`, false);
+        }
+
+        if (data.type === "file_chunk") {
+            const file = receivedFiles[data.peerId];
+            file.chunks.push(data.chunk);
+            file.received += data.chunk.byteLength;
+
+            if (file.received >= file.size) {
+                const blob = new Blob(file.chunks, { type: file.mime });
+                const url = URL.createObjectURL(blob);
+
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = file.name;
+                a.textContent = "⬇ Download " + file.name;
+                a.style.color = "#38bdf8";
+
+                messagesContainer.appendChild(a);
+                delete receivedFiles[data.peerId];
+            }
+        }
+
+        if (data.type === "media_status") {
+            updateMediaStatus(data.peerId, data.mic, data.cam);
+        }
+    });
 }
 
-// Call this after room creation success
-markCreator();
+// ---------- ROOM INFO BAR ----------
+function showRoomInfo(roomName, roomId, creator) {
+    const bar = document.createElement("div");
+    bar.className = "room-info-bar";
+    bar.innerHTML = `
+        Room: <span>${roomName}</span>
+        ID: <span>${roomId}</span>
+        Creator: <span>${creator}</span>
+    `;
+    document.body.prepend(bar);
+}
+
+// ---------- HIGH QUALITY VIDEO ----------
+async function getHighQualityStream() {
+    return await navigator.mediaDevices.getUserMedia({
+        video: {
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+            frameRate: { ideal: 30 }
+        },
+        audio: true
+    });
+}
+
+// ---------- PREVENT CROSS ROOM MIX ----------
+function isolateRoom(roomId) {
+    peer.disconnect();
+    peer = new Peer(myPeerId, { metadata: { room: roomId } });
+}
+
+// ---------- AUTO APPLY MODE UI ----------
+window.addEventListener("load", () => {
+    applyModeUI();
+});
