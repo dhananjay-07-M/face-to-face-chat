@@ -1,6 +1,6 @@
 // ===============================
 // VISIO - SCRIPT.JS (PART 1)
-// Mode + Create/Join + Room Info + Creator + Firebase + Peer Setup
+// Room System + Creator + Mode Lock + Firebase
 // ===============================
 
 const firebaseConfig = {
@@ -20,34 +20,29 @@ let CURRENT_MODE = "";
 let ROOM_NAME = "";
 let ROOM_ID = "";
 let MAX_USERS = 0;
-let CREATOR = "";
 let DISPLAY_NAME = "";
-
+let CREATOR_ID = "";
 let peer, myPeerId, localStream;
 
 const connections = {};
 const userNames = {};
 
-// UI SCREENS
+// UI
 const joinScreen = document.getElementById("join-screen");
 const actionScreen = document.getElementById("action-screen");
 const createScreen = document.getElementById("create-screen");
 const joinRoomScreen = document.getElementById("join-room-screen");
 const mainApp = document.getElementById("main-app");
+const onlineUsersList = document.getElementById("online-users-list");
 
-// INPUTS
+// Inputs
 const roomNameInput = document.getElementById("room-name");
 const roomIdInput = document.getElementById("room-id");
 const maxUsersInput = document.getElementById("max-users");
 const joinRoomIdInput = document.getElementById("join-room-id");
 const modeTitle = document.getElementById("mode-title");
 
-// ROOM INFO UI
-const roomInfoName = document.getElementById("room-info-name");
-const roomInfoId = document.getElementById("room-info-id");
-const roomInfoCreator = document.getElementById("room-info-creator");
-
-// ---------- USER NAME ----------
+// ---------- USERNAME ----------
 function getValidUsername() {
     const regex = /^[A-Za-z0-9 ]{1,15}$/;
     while (true) {
@@ -71,7 +66,7 @@ function selectMode(mode) {
         "Video + Text Mode";
 }
 
-// ---------- NAV FLOW ----------
+// ---------- UI FLOW ----------
 function showCreate() {
     actionScreen.style.display = "none";
     createScreen.style.display = "flex";
@@ -99,11 +94,9 @@ function createRoom() {
     ROOM_ID = roomIdInput.value.trim();
     MAX_USERS = parseInt(maxUsersInput.value);
 
-    const idRegex = /^[A-Za-z0-9]+$/;
-
-    if (!ROOM_NAME || ROOM_NAME.length < 3) return alert("Enter valid Room Name");
-    if (!ROOM_ID || !idRegex.test(ROOM_ID)) return alert("Room ID only letters & numbers");
-    if (!MAX_USERS || MAX_USERS < 2 || MAX_USERS > 20) return alert("Max users 2-20");
+    if (!ROOM_NAME || ROOM_NAME.length < 3) return alert("Room name min 3 chars");
+    if (!ROOM_ID || !/^[A-Za-z0-9]+$/.test(ROOM_ID)) return alert("Room ID only letters & numbers");
+    if (!MAX_USERS || MAX_USERS < 2 || MAX_USERS > 20) return alert("Max users 2 to 20");
 
     startRoom(true);
 }
@@ -111,9 +104,7 @@ function createRoom() {
 // ---------- JOIN ROOM ----------
 function joinRoom() {
     ROOM_ID = joinRoomIdInput.value.trim();
-    const idRegex = /^[A-Za-z0-9]+$/;
-
-    if (!ROOM_ID || !idRegex.test(ROOM_ID)) return alert("Enter valid Room ID");
+    if (!ROOM_ID || !/^[A-Za-z0-9]+$/.test(ROOM_ID)) return alert("Enter valid Room ID");
 
     startRoom(false);
 }
@@ -134,84 +125,65 @@ function startRoom(isCreate) {
 
     peer.on("open", id => {
         roomRef.once("value", snap => {
+
             if (snap.exists()) {
                 const data = snap.val();
 
                 if (data.mode !== CURRENT_MODE) {
-                    alert("This room is for a different mode!");
+                    alert("This room is for another mode!");
                     location.reload();
                     return;
                 }
 
                 if (Object.keys(data.users || {}).length >= data.maxUsers) {
-                    alert("Room is full!");
+                    alert("Room Full!");
                     location.reload();
                     return;
                 }
 
-                CREATOR = data.creator;
-                ROOM_NAME = data.roomName;
             } else {
                 if (!isCreate) {
-                    alert("Room ID not found!");
+                    alert("Room not found!");
                     location.reload();
                     return;
                 }
 
-                CREATOR = DISPLAY_NAME;
+                CREATOR_ID = id;
 
                 roomRef.set({
                     roomName: ROOM_NAME,
                     roomId: ROOM_ID,
                     mode: CURRENT_MODE,
                     maxUsers: MAX_USERS,
-                    creator: CREATOR
+                    creator: DISPLAY_NAME,
+                    creatorId: id
                 });
             }
 
-            // Show Room Info
-            roomInfoName.innerText = "Room: " + ROOM_NAME;
-            roomInfoId.innerText = "ID: " + ROOM_ID;
-            roomInfoCreator.innerText = "Creator: " + CREATOR;
-
-            // Register User
             roomRef.child("users/" + id).set({
                 name: DISPLAY_NAME,
-                peerId: id
+                peerId: id,
+                joinedAt: firebase.database.ServerValue.TIMESTAMP
             });
 
             roomRef.child("users/" + id).onDisconnect().remove();
 
-            roomRef.child("users").on("child_added", snap => {
-                const user = snap.val();
-                userNames[user.peerId] = user.name;
+            roomRef.child("users").on("value", snap => {
+                onlineUsersList.innerHTML = "";
+                const users = snap.val() || {};
 
-                if (user.peerId !== id) {
-                    connectToPeer(user.peerId);
-                    if (CURRENT_MODE !== "text") callPeer(user.peerId);
-                }
+                Object.values(users).forEach(u => {
+                    userNames[u.peerId] = u.name;
+                    addOnlineUser(u.peerId, u.name);
+                });
             });
+
         });
     });
-
-    peer.on("call", call => {
-        if (CURRENT_MODE === "text") return;
-        call.answer(localStream);
-        call.on("stream", stream => addVideoStream(call.peer, stream));
-    });
-
-    peer.on("connection", setupDataConnection);
-
-    if (CURRENT_MODE !== "text") {
-        navigator.mediaDevices.getUserMedia({ video: true, audio: true }).then(stream => {
-            localStream = stream;
-            document.getElementById("local-video").srcObject = stream;
-        });
-    }
 }
 // ===============================
 // VISIO - SCRIPT.JS (PART 2)
-// Video + Chat + Online Users + Media Status + Mode Isolation
+// Media Setup + Mode Isolation + Peer Calls
 // ===============================
 
 const videoGrid = document.getElementById("video-grid");
@@ -221,45 +193,60 @@ const messageInput = document.getElementById("message-input");
 const micToggle = document.getElementById("mic-toggle");
 const videoToggle = document.getElementById("video-toggle");
 const leaveCall = document.getElementById("leave-call");
-const onlineUsersList = document.getElementById("online-users-list");
+const fileInput = document.getElementById("file-input");
+const fileBtn = document.getElementById("file-btn");
 
-function applyModeUI() {
-    document.body.classList.remove("video-only", "text-only");
-    if (CURRENT_MODE === "video") document.body.classList.add("video-only");
-    if (CURRENT_MODE === "text") document.body.classList.add("text-only");
+// ---------- MEDIA INIT ----------
+async function initMedia() {
+    if (CURRENT_MODE === "text") {
+        document.body.classList.add("text-only");
+        return;
+    }
+
+    document.body.classList.add(CURRENT_MODE === "video" ? "video-only" : "both-mode");
+
+    localStream = await navigator.mediaDevices.getUserMedia({
+        video: { width: 1280, height: 720 },
+        audio: { echoCancellation: true, noiseSuppression: true }
+    });
+
+    const localVideo = document.getElementById("local-video");
+    localVideo.srcObject = localStream;
+    localVideo.muted = true;
+    await localVideo.play();
 }
 
-// ---------- PEER CONNECTION ----------
-function callPeer(id) {
-    if (connections[id]?.media) return;
-    const call = peer.call(id, localStream);
-    connections[id] = { media: call };
-    call.on("stream", stream => addVideoStream(id, stream));
+// ---------- PEER CALL ----------
+function callPeer(peerId) {
+    if (connections[peerId]?.media) return;
+
+    const call = peer.call(peerId, localStream);
+    connections[peerId] = connections[peerId] || {};
+    connections[peerId].media = call;
+
+    call.on("stream", stream => addVideoStream(peerId, stream));
 }
 
-function connectToPeer(id) {
-    if (connections[id]?.data) return;
-    const conn = peer.connect(id, { reliable: true });
-    connections[id] = { ...connections[id], data: conn };
+// ---------- CONNECT DATA ----------
+function connectToPeer(peerId) {
+    if (connections[peerId]?.data) return;
+
+    const conn = peer.connect(peerId, { reliable: true });
+    connections[peerId] = connections[peerId] || {};
+    connections[peerId].data = conn;
+
     setupDataConnection(conn);
 }
 
-// ---------- DATA CHANNEL ----------
-function setupDataConnection(conn) {
-    conn.on("data", data => {
+// ---------- INCOMING CALL ----------
+peer?.on("call", call => {
+    if (CURRENT_MODE === "text") return;
 
-        if (data.type === "chat" && CURRENT_MODE !== "video") {
-            displayMessage(data.user, data.text, false);
-        }
+    call.answer(localStream);
+    call.on("stream", stream => addVideoStream(call.peer, stream));
+});
 
-        if (data.type === "media_status") {
-            updateMediaStatus(data.peerId, data.mic, data.cam);
-        }
-
-    });
-}
-
-// ---------- VIDEO GRID ----------
+// ---------- VIDEO UI ----------
 function addVideoStream(id, stream) {
     if (document.getElementById("wrap-" + id)) return;
 
@@ -274,7 +261,7 @@ function addVideoStream(id, stream) {
 
     const name = document.createElement("div");
     name.className = "name-label";
-    name.innerText = userNames[id];
+    name.innerText = userNames[id] || "User";
 
     const status = document.createElement("div");
     status.className = "media-status";
@@ -283,36 +270,6 @@ function addVideoStream(id, stream) {
     wrapper.append(video, name, status);
     videoGrid.appendChild(wrapper);
 }
-
-// ---------- MEDIA STATUS ----------
-function updateMediaStatus(id, mic, cam) {
-    const el = document.getElementById("status-" + id);
-    if (!el) return;
-    el.innerText = (!mic ? "🔇 " : "") + (!cam ? "🚫" : "");
-}
-
-// ---------- CHAT ----------
-function displayMessage(user, text, mine) {
-    const div = document.createElement("div");
-    div.className = mine ? "my-message" : "remote-message";
-    div.innerHTML = `<b>${user}</b>: ${text}`;
-    messagesContainer.appendChild(div);
-    messagesContainer.scrollTop = messagesContainer.scrollHeight;
-}
-
-messageForm.onsubmit = e => {
-    e.preventDefault();
-    if (CURRENT_MODE === "video") return;
-
-    const msg = messageInput.value.trim();
-    if (!msg) return;
-
-    displayMessage(DISPLAY_NAME, msg, true);
-    Object.values(connections).forEach(c =>
-        c.data?.send({ type: "chat", user: DISPLAY_NAME, text: msg })
-    );
-    messageInput.value = "";
-};
 
 // ---------- MIC & CAMERA ----------
 function broadcastStatus() {
@@ -336,61 +293,131 @@ videoToggle.onclick = () => {
     broadcastStatus();
 };
 
-// ---------- ONLINE USERS ----------
+// ---------- USER LIST ----------
 function addOnlineUser(id, name) {
     const p = document.createElement("p");
     p.id = "user-" + id;
     p.innerText = "🟢 " + name;
     onlineUsersList.appendChild(p);
 }
-
-// ---------- EXIT ----------
-function leaveRoom() {
-    if (peer) peer.destroy();
-    location.reload();
-}
-
-leaveCall.onclick = leaveRoom;
 // ===============================
 // VISIO - SCRIPT.JS (PART 3)
-// Camera Switch + File Share + Room Info + Creator + Quality + Stability
+// Chat + Files + Room Info + Creator + Exit
 // ===============================
 
-// ---------- CAMERA SWITCH (MOBILE FRONT/BACK) ----------
-let currentCamera = "user";
+const onlineUsersList = document.getElementById("online-users-list");
+const roomInfoBar = document.createElement("div");
+roomInfoBar.className = "room-info-bar";
+document.getElementById("main-app").prepend(roomInfoBar);
 
-async function switchCamera() {
-    if (!localStream) return;
-
-    currentCamera = currentCamera === "user" ? "environment" : "user";
-
-    const newStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: currentCamera },
-        audio: true
-    });
-
-    const videoTrack = newStream.getVideoTracks()[0];
-    const sender = Object.values(connections).find(c => c.media)?.media.peerConnection
-        .getSenders().find(s => s.track.kind === "video");
-
-    if (sender) sender.replaceTrack(videoTrack);
-
-    localStream.getTracks().forEach(t => t.stop());
-    localStream = newStream;
-    document.getElementById("local-video").srcObject = newStream;
-}
-
-// ---------- FILE SHARE ----------
-const fileInput = document.getElementById("file-input");
-const fileBtn = document.getElementById("file-btn");
 const receivedFiles = {};
 const CHUNK_SIZE = 16000;
 
+// ---------- ROOM INFO ----------
+function showRoomInfo(roomName, roomId, creator) {
+    roomInfoBar.innerHTML = `
+        <span>Room: ${roomName}</span>
+        <span>ID: ${roomId}</span>
+        <span>Host: ${creator} <span class="creator-badge">Creator</span></span>
+    `;
+}
+
+// ---------- DATA CHANNEL ----------
+function setupDataConnection(conn) {
+    conn.on("data", data => {
+
+        if (data.type === "chat" && CURRENT_MODE !== "video") {
+            displayMessage(data.user, data.text, false);
+        }
+
+        if (data.type === "image") {
+            displayMessage(data.user, data.dataURL, false);
+        }
+
+        if (data.type === "file_meta") {
+            receivedFiles[data.peerId] = { ...data, chunks: [], received: 0 };
+            displayMessage("System", `${data.sender} is sending ${data.name}`, false);
+        }
+
+        if (data.type === "file_chunk") {
+            const file = receivedFiles[data.peerId];
+            file.chunks.push(data.chunk);
+            file.received += data.chunk.byteLength;
+
+            if (file.received >= file.size) {
+                const blob = new Blob(file.chunks, { type: file.mime });
+                const url = URL.createObjectURL(blob);
+
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = file.name;
+                a.textContent = "⬇ Download " + file.name;
+                a.style.color = "#38bdf8";
+
+                messagesContainer.appendChild(a);
+                delete receivedFiles[data.peerId];
+            }
+        }
+
+        if (data.type === "media_status") {
+            updateMediaStatus(data.peerId, data.mic, data.cam);
+        }
+    });
+}
+
+// ---------- CHAT ----------
+function displayMessage(user, text, mine) {
+    const div = document.createElement("div");
+    div.className = mine ? "my-message" : "remote-message";
+
+    if (typeof text === "string" && text.startsWith("data:image")) {
+        const img = document.createElement("img");
+        img.src = text;
+        img.style.maxWidth = "200px";
+        img.style.borderRadius = "8px";
+        div.innerHTML = `<b>${user}</b><br>`;
+        div.appendChild(img);
+    } else {
+        div.innerHTML = `<b>${user}</b>: ${text}`;
+    }
+
+    messagesContainer.appendChild(div);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+}
+
+messageForm.onsubmit = e => {
+    e.preventDefault();
+    if (CURRENT_MODE === "video") return;
+
+    const msg = messageInput.value.trim();
+    if (!msg) return;
+
+    displayMessage(DISPLAY_NAME, msg, true);
+
+    Object.values(connections).forEach(c =>
+        c.data?.send({ type: "chat", user: DISPLAY_NAME, text: msg })
+    );
+
+    messageInput.value = "";
+};
+
+// ---------- FILE SEND ----------
 fileBtn.onclick = () => fileInput.click();
 
 fileInput.onchange = () => {
     const file = fileInput.files[0];
     if (!file) return;
+
+    if (file.type.startsWith("image/")) {
+        const reader = new FileReader();
+        reader.onload = e => {
+            Object.values(connections).forEach(c =>
+                c.data?.send({ type: "image", user: DISPLAY_NAME, dataURL: e.target.result })
+            );
+            displayMessage(DISPLAY_NAME, e.target.result, true);
+        };
+        reader.readAsDataURL(file);
+    }
 
     const meta = {
         type: "file_meta",
@@ -422,76 +449,10 @@ fileInput.onchange = () => {
     readNextChunk();
 };
 
-// ---------- FILE RECEIVE ----------
-function setupDataConnection(conn) {
-    conn.on("data", data => {
-
-        if (data.type === "chat" && CURRENT_MODE !== "video") {
-            displayMessage(data.user, data.text, false);
-        }
-
-        if (data.type === "file_meta") {
-            receivedFiles[data.peerId] = { ...data, chunks: [], received: 0 };
-            displayMessage("System", `${data.sender} sent ${data.name}`, false);
-        }
-
-        if (data.type === "file_chunk") {
-            const file = receivedFiles[data.peerId];
-            file.chunks.push(data.chunk);
-            file.received += data.chunk.byteLength;
-
-            if (file.received >= file.size) {
-                const blob = new Blob(file.chunks, { type: file.mime });
-                const url = URL.createObjectURL(blob);
-
-                const a = document.createElement("a");
-                a.href = url;
-                a.download = file.name;
-                a.textContent = "⬇ Download " + file.name;
-                a.style.color = "#38bdf8";
-
-                messagesContainer.appendChild(a);
-                delete receivedFiles[data.peerId];
-            }
-        }
-
-        if (data.type === "media_status") {
-            updateMediaStatus(data.peerId, data.mic, data.cam);
-        }
-    });
+// ---------- EXIT ----------
+function leaveRoom() {
+    if (peer) peer.destroy();
+    location.reload();
 }
 
-// ---------- ROOM INFO BAR ----------
-function showRoomInfo(roomName, roomId, creator) {
-    const bar = document.createElement("div");
-    bar.className = "room-info-bar";
-    bar.innerHTML = `
-        Room: <span>${roomName}</span>
-        ID: <span>${roomId}</span>
-        Creator: <span>${creator}</span>
-    `;
-    document.body.prepend(bar);
-}
-
-// ---------- HIGH QUALITY VIDEO ----------
-async function getHighQualityStream() {
-    return await navigator.mediaDevices.getUserMedia({
-        video: {
-            width: { ideal: 1280 },
-            height: { ideal: 720 },
-            frameRate: { ideal: 30 }
-        },
-        audio: true
-    });
-}
-
-// ---------- PREVENT CROSS ROOM MIX ----------
-function isolateRoom(roomId) {
-    peer.disconnect();
-    peer = new Peer(myPeerId, { metadata: { room: roomId } });
-}
-
-// ---------- AUTO APPLY MODE UI ----------
-window.addEventListener("load", () => {
-    applyModeUI();
-});
+leaveCall.onclick = leaveRoom;
