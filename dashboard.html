@@ -17,10 +17,18 @@
 </head>
 <body>
 
+<!-- TOP NAV -->
+<nav class="navbar">
+    <div class="nav-brand">VISIO</div>
+    <div class="nav-links">
+        <a href="index.html" class="cta-nav">🏠 Home</a>
+    </div>
+</nav>
+
 <!-- STEP 1: MODE SELECTION -->
 <div id="join-screen">
     <h2>Welcome to <span style="color:#38bdf8;">VISIO</span></h2>
-    <p>Select Mode</p>
+    <p>Select Communication Mode</p>
 
     <button class="mode-btn" onclick="selectMode('text')">💬 Text Only</button>
     <button class="mode-btn" onclick="selectMode('video')">🎥 Video Only</button>
@@ -42,7 +50,7 @@
     <h2>Create Room</h2>
 
     <input class="room-input" type="text" id="room-name" placeholder="Room Name">
-    <input class="room-input" type="text" id="room-id" placeholder="Room ID (A-Z, 0-9 only)">
+    <input class="room-input" type="text" id="room-id" placeholder="Room ID (Letters & Numbers)">
     <input class="room-input" type="number" id="max-users" placeholder="Max Members (2-20)" min="2" max="20">
 
     <button class="room-btn create" onclick="createRoom()">Create</button>
@@ -62,69 +70,69 @@
 <!-- MAIN APP -->
 <div id="main-app" style="display:none;">
 
-<nav class="navbar dashboard-nav">
-    <div class="nav-brand">VISIO</div>
-    <div class="nav-links">
-        <a href="index.html" class="cta-nav">🏠 Home</a>
-        <button class="cta-nav" onclick="leaveRoom()">← Exit</button>
+    <!-- ROOM INFO BAR -->
+    <div class="room-info-bar">
+        <span id="room-info-name">Room:</span>
+        <span id="room-info-id">ID:</span>
+        <span id="room-info-creator">Creator:</span>
     </div>
-</nav>
 
-<!-- ROOM INFO BAR -->
-<div style="text-align:center; padding:8px; background:#020617;">
-    <span id="room-info"></span> |
-    <span id="room-creator"></span>
-</div>
-
-<div id="app-container">
-
-    <aside id="sidebar">
-        <h3>Online Users</h3>
-        <div id="online-users-list"></div>
-    </aside>
-
-    <main id="main-content">
-
-        <div id="video-grid">
-            <div class="video-wrapper">
-                <video id="local-video" muted autoplay playsinline></video>
-                <div class="name-label">You</div>
-                <div class="media-status" id="status-local"></div>
-            </div>
+    <nav class="navbar dashboard-nav">
+        <div class="nav-brand">VISIO</div>
+        <div class="nav-links">
+            <button class="cta-nav" onclick="leaveRoom()">← Exit</button>
+            <a href="index.html" class="cta-nav">🏠 Home</a>
         </div>
+    </nav>
 
-        <div id="messages-container"></div>
+    <div id="app-container">
 
-        <form id="message-form">
-            <input type="text" id="message-input" placeholder="Type a message...">
+        <aside id="sidebar">
+            <h3>Online Users</h3>
+            <div id="online-users-list"></div>
+        </aside>
 
-            <input type="file" id="file-input" hidden>
-            <button type="button" id="file-btn" class="control-btn">📎</button>
+        <main id="main-content">
 
-            <button id="mic-toggle" type="button" class="control-btn">
-                <i class="fas fa-microphone"></i>
-            </button>
+            <div id="video-grid">
+                <div class="video-wrapper">
+                    <video id="local-video" muted autoplay playsinline></video>
+                    <div class="name-label">You</div>
+                    <div class="media-status" id="status-local"></div>
+                </div>
+            </div>
 
-            <button id="video-toggle" type="button" class="control-btn">
-                <i class="fas fa-video"></i>
-            </button>
+            <div id="messages-container"></div>
 
-            <!-- Camera Switch -->
-            <button id="camera-switch" type="button" class="control-btn">
-                <i class="fas fa-sync-alt"></i>
-            </button>
+            <form id="message-form">
+                <input type="text" id="message-input" placeholder="Type a message...">
 
-            <button type="submit" class="control-btn">
-                <i class="fas fa-paper-plane"></i>
-            </button>
+                <input type="file" id="file-input" hidden>
+                <button type="button" id="file-btn" class="control-btn">📎</button>
 
-            <button id="leave-call" type="button" class="control-btn end-call">
-                <i class="fas fa-phone-slash"></i>
-            </button>
-        </form>
+                <button id="mic-toggle" type="button" class="control-btn">
+                    <i class="fas fa-microphone"></i>
+                </button>
 
-    </main>
-</div>
+                <button id="video-toggle" type="button" class="control-btn">
+                    <i class="fas fa-video"></i>
+                </button>
+
+                <button id="camera-switch" type="button" class="control-btn">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+
+                <button type="submit" class="control-btn">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+
+                <button id="leave-call" type="button" class="control-btn end-call">
+                    <i class="fas fa-phone-slash"></i>
+                </button>
+            </form>
+
+        </main>
+    </div>
 </div>
 
 <script src="script.js"></script>
