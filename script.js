@@ -414,3 +414,111 @@ function leaveRoom() {
 }
 
 leaveCall.onclick = leaveRoom;
+// ===============================
+// VISIO - SCRIPT.JS (PART 3)
+// Room Info Bar + Mode Lock + Creator + Camera Switch + Stability
+// ===============================
+
+let ROOM_CREATOR = "";
+let currentCamera = "user"; // front camera default
+
+const roomInfoBar = document.createElement("div");
+roomInfoBar.className = "room-info-bar";
+roomInfoBar.innerHTML = `
+    <span id="room-name-label"></span>
+    <span id="room-id-label"></span>
+    <span id="room-creator-label"></span>
+`;
+document.getElementById("main-content").prepend(roomInfoBar);
+
+// ---------- SHOW ROOM DETAILS ----------
+function showRoomInfo(name, id, creator) {
+    document.getElementById("room-name-label").innerText = "Room: " + name;
+    document.getElementById("room-id-label").innerText = "ID: " + id;
+    document.getElementById("room-creator-label").innerHTML =
+        "Creator: " + creator + ' <span class="creator-badge">Host</span>';
+}
+
+// ---------- SAVE CREATOR ----------
+function setCreatorIfFirst(roomRef, myId) {
+    roomRef.child("creator").once("value", snap => {
+        if (!snap.exists()) {
+            roomRef.child("creator").set({
+                name: DISPLAY_NAME,
+                peerId: myId
+            });
+            ROOM_CREATOR = DISPLAY_NAME;
+        } else {
+            ROOM_CREATOR = snap.val().name;
+        }
+
+        showRoomInfo(ROOM_NAME || "VISIO Room", ROOM_ID, ROOM_CREATOR);
+    });
+}
+
+// Call this inside peer.on("open") after roomRef is defined
+// setCreatorIfFirst(roomRef, id);
+
+// ---------- STRICT MODE LOCK ----------
+function applyModeLock() {
+    document.body.classList.remove("text-only", "video-only");
+
+    if (CURRENT_MODE === "text") {
+        document.body.classList.add("text-only");
+    }
+
+    if (CURRENT_MODE === "video") {
+        document.body.classList.add("video-only");
+    }
+}
+
+// Call this once room loads
+// applyModeLock();
+
+// ---------- CAMERA SWITCH ----------
+async function switchCamera() {
+    if (!localStream) return;
+
+    currentCamera = currentCamera === "user" ? "environment" : "user";
+
+    const newStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: currentCamera },
+        audio: true
+    });
+
+    localStream.getTracks().forEach(t => t.stop());
+    localStream = newStream;
+    document.getElementById("local-video").srcObject = newStream;
+
+    // Replace tracks for all peers
+    Object.values(connections).forEach(conn => {
+        if (conn.media) {
+            const sender = conn.media.peerConnection.getSenders()
+                .find(s => s.track.kind === "video");
+            if (sender) sender.replaceTrack(newStream.getVideoTracks()[0]);
+        }
+    });
+}
+
+// Add button dynamically
+const camSwitchBtn = document.createElement("button");
+camSwitchBtn.className = "control-btn";
+camSwitchBtn.innerText = "🔄";
+camSwitchBtn.title = "Switch Camera";
+camSwitchBtn.onclick = switchCamera;
+document.getElementById("message-form").appendChild(camSwitchBtn);
+
+// ---------- CONNECTION STABILITY ----------
+peer.on("disconnected", () => {
+    console.log("Reconnecting...");
+    peer.reconnect();
+});
+
+peer.on("error", err => {
+    console.error("Peer error:", err);
+});
+
+// ---------- CLEAN EXIT ----------
+window.addEventListener("beforeunload", () => {
+    if (peer) peer.destroy();
+});
