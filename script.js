@@ -70,9 +70,9 @@ function selectMode(mode) {
     roomScreen.style.display = "flex";
 
     selectedModeTitle.innerText =
-        mode === "text" ? "Create / Join Text Room" :
-        mode === "video" ? "Create / Join Video Room" :
-        "Create / Join Video + Text Room";
+        mode === "text" ? "Text Only Room" :
+        mode === "video" ? "Video Only Room" :
+        "Video + Text Room";
 }
 
 // ---------- BACK ----------
@@ -82,35 +82,17 @@ function goBackToMode() {
 }
 
 // ---------- CREATE / JOIN ----------
-function createRoom() {
-    startRoom(true);
-}
-
-function joinRoom() {
-    startRoom(false);
-}
+function createRoom() { startRoom(true); }
+function joinRoom() { startRoom(false); }
 
 function startRoom(isCreate) {
     ROOM_NAME = roomNameInput.value.trim();
     ROOM_ID = roomIdInput.value.trim();
     MAX_USERS = parseInt(maxUsersInput.value);
 
-    const idRegex = /^[A-Za-z0-9]+$/;
-
-    if (!ROOM_NAME || ROOM_NAME.length < 3) {
-        alert("Enter valid Room Name (min 3 characters)");
-        return;
-    }
-
-    if (!ROOM_ID || !idRegex.test(ROOM_ID)) {
-        alert("Room ID must contain only letters and numbers");
-        return;
-    }
-
-    if (!MAX_USERS || MAX_USERS < 2 || MAX_USERS > 20) {
-        alert("Max users must be between 2 and 20");
-        return;
-    }
+    if (!ROOM_NAME || ROOM_NAME.length < 3) return alert("Enter valid Room Name");
+    if (!/^[A-Za-z0-9]+$/.test(ROOM_ID)) return alert("Room ID must be letters & numbers only");
+    if (!MAX_USERS || MAX_USERS < 2 || MAX_USERS > 20) return alert("Max users 2–20");
 
     roomScreen.style.display = "none";
     mainApp.style.display = "block";
@@ -147,40 +129,14 @@ async function initializeApp(isCreate) {
         roomRef.once("value", snap => {
             if (snap.exists()) {
                 const data = snap.val();
-
-                if (data.mode !== CURRENT_MODE) {
-                    alert("This room is for a different mode!");
-                    location.reload();
-                    return;
-                }
-
-                if (Object.keys(data.users || {}).length >= data.maxUsers) {
-                    alert("Room is full!");
-                    location.reload();
-                    return;
-                }
+                if (data.mode !== CURRENT_MODE) return alert("Wrong mode room!");
+                if (Object.keys(data.users || {}).length >= data.maxUsers) return alert("Room full!");
             } else {
-                if (!isCreate) {
-                    alert("Room ID not found!");
-                    location.reload();
-                    return;
-                }
-
-                roomRef.set({
-                    roomName: ROOM_NAME,
-                    roomId: ROOM_ID,
-                    mode: CURRENT_MODE,
-                    maxUsers: MAX_USERS
-                });
+                if (!isCreate) return alert("Room not found!");
+                roomRef.set({ roomName: ROOM_NAME, roomId: ROOM_ID, mode: CURRENT_MODE, maxUsers: MAX_USERS });
             }
 
-            roomRef.child("users/" + id).set({
-                name: DISPLAY_NAME,
-                peerId: id
-            });
-
-            roomRef.child("users/" + id).onDisconnect().remove();
-
+            roomRef.child("users/" + id).set({ name: DISPLAY_NAME, peerId: id });
             roomRef.child("users").on("child_added", snap => {
                 const user = snap.val();
                 userNames[user.peerId] = user.name;
@@ -236,7 +192,6 @@ function setupDataConnection(conn) {
 
         if (data.type === "file_meta") {
             receivedFiles[data.peerId] = { ...data, chunks: [], received: 0 };
-            displayMessage("System", `${data.sender} sent ${data.name}`, false);
         }
 
         if (data.type === "file_chunk") {
@@ -296,12 +251,7 @@ function updateMediaStatus(id, mic, cam) {
     el.innerText = (!mic ? "🔇 " : "") + (!cam ? "🚫" : "");
 }
 
-function removeVideoStream(id) {
-    const el = document.getElementById("wrap-" + id);
-    if (el) el.remove();
-}
-
-// ---------- CHAT UI ----------
+// ---------- CHAT ----------
 function displayMessage(user, text, mine) {
     const div = document.createElement("div");
     div.className = mine ? "my-message" : "remote-message";
