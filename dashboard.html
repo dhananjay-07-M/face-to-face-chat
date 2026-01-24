@@ -1,28 +1,23 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>VISIO – Face to Face Communication</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
+    <title>VISIO – Face to Face Communication</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<link rel="stylesheet" href="style.css">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 
-<script src="https://www.gstatic.com/firebasejs/7.14.0/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/7.14.0/firebase-database.js"></script>
-<script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/7.14.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/7.14.0/firebase-database.js"></script>
+
+    <!-- PeerJS -->
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 </head>
 <body>
 
-<!-- HOME BUTTON ALWAYS -->
-<nav class="navbar">
-    <div class="nav-links">
-        <a href="index.html" class="cta-nav">🏠 Home</a>
-    </div>
-    <div class="nav-brand">VISIO</div>
-</nav>
-
-<!-- STEP 1: MODE -->
+<!-- STEP 1: MODE SELECTION -->
 <div id="join-screen">
     <h2>Welcome to <span style="color:#38bdf8;">VISIO</span></h2>
     <p>Select Mode</p>
@@ -38,41 +33,47 @@
 
     <button class="room-btn create" onclick="showCreate()">➕ Create Room</button>
     <button class="room-btn join" onclick="showJoin()">🔑 Join Room</button>
+
     <button class="room-btn back" onclick="backToMode()">← Back</button>
 </div>
 
-<!-- STEP 3A: CREATE -->
+<!-- STEP 3A: CREATE ROOM -->
 <div id="create-screen" style="display:none;">
     <h2>Create Room</h2>
 
-    <input class="room-input" id="room-name" placeholder="Room Name">
-    <input class="room-input" id="room-id" placeholder="Room ID (Letters & Numbers)">
-    <input class="room-input" id="max-users" type="number" min="2" max="20" placeholder="Max Members">
+    <input class="room-input" type="text" id="room-name" placeholder="Room Name">
+    <input class="room-input" type="text" id="room-id" placeholder="Room ID (A-Z, 0-9 only)">
+    <input class="room-input" type="number" id="max-users" placeholder="Max Members (2-20)" min="2" max="20">
 
     <button class="room-btn create" onclick="createRoom()">Create</button>
     <button class="room-btn back" onclick="backToAction()">← Back</button>
 </div>
 
-<!-- STEP 3B: JOIN -->
+<!-- STEP 3B: JOIN ROOM -->
 <div id="join-room-screen" style="display:none;">
     <h2>Join Room</h2>
 
-    <input class="room-input" id="join-room-id" placeholder="Enter Room ID">
+    <input class="room-input" type="text" id="join-room-id" placeholder="Enter Room ID">
 
     <button class="room-btn join" onclick="joinRoom()">Join</button>
     <button class="room-btn back" onclick="backToAction()">← Back</button>
 </div>
 
-<!-- MAIN ROOM -->
+<!-- MAIN APP -->
 <div id="main-app" style="display:none;">
 
-<div class="navbar dashboard-nav">
-    <div>
-        <b id="room-info">Room:</b>
-    </div>
+<nav class="navbar dashboard-nav">
+    <div class="nav-brand">VISIO</div>
     <div class="nav-links">
-        <button class="cta-nav" onclick="leaveRoom()">Exit</button>
+        <a href="index.html" class="cta-nav">🏠 Home</a>
+        <button class="cta-nav" onclick="leaveRoom()">← Exit</button>
     </div>
+</nav>
+
+<!-- ROOM INFO BAR -->
+<div style="text-align:center; padding:8px; background:#020617;">
+    <span id="room-info"></span> |
+    <span id="room-creator"></span>
 </div>
 
 <div id="app-container">
@@ -100,9 +101,22 @@
             <input type="file" id="file-input" hidden>
             <button type="button" id="file-btn" class="control-btn">📎</button>
 
-            <button id="mic-toggle" type="button" class="control-btn"><i class="fas fa-microphone"></i></button>
-            <button id="video-toggle" type="button" class="control-btn"><i class="fas fa-video"></i></button>
-            <button type="submit" class="control-btn"><i class="fas fa-paper-plane"></i></button>
+            <button id="mic-toggle" type="button" class="control-btn">
+                <i class="fas fa-microphone"></i>
+            </button>
+
+            <button id="video-toggle" type="button" class="control-btn">
+                <i class="fas fa-video"></i>
+            </button>
+
+            <!-- Camera Switch -->
+            <button id="camera-switch" type="button" class="control-btn">
+                <i class="fas fa-sync-alt"></i>
+            </button>
+
+            <button type="submit" class="control-btn">
+                <i class="fas fa-paper-plane"></i>
+            </button>
 
             <button id="leave-call" type="button" class="control-btn end-call">
                 <i class="fas fa-phone-slash"></i>
