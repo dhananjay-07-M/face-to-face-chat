@@ -1,8 +1,9 @@
 // ===============================
 // VISIO - SCRIPT.JS (PART 1)
-// Mode + Create/Join Flow + Room ID + Firebase + Peer Setup
+// Core Engine: Mode, Create/Join, Room Lock, Firebase, Peer Setup
 // ===============================
 
+// ---------- FIREBASE CONFIG ----------
 const firebaseConfig = {
     apiKey: "AIzaSyDkrzN0604XsYRipUbPF9iiLXy8aaOji3o",
     authDomain: "dhananjay-chat-app.firebaseapp.com",
@@ -16,24 +17,25 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const database = firebase.database();
 
+// ---------- GLOBAL STATE ----------
 let CURRENT_MODE = "";
-let ROOM_NAME = "";
 let ROOM_ID = "";
+let ROOM_NAME = "";
 let MAX_USERS = 0;
 let DISPLAY_NAME = "";
-let peer, myPeerId, localStream;
+let HOST_ID = "";
 
+let peer, myPeerId, localStream;
 const connections = {};
 const userNames = {};
 
-// UI Screens
+// ---------- UI REFERENCES ----------
 const joinScreen = document.getElementById("join-screen");
 const actionScreen = document.getElementById("action-screen");
 const createScreen = document.getElementById("create-screen");
 const joinRoomScreen = document.getElementById("join-room-screen");
 const mainApp = document.getElementById("main-app");
 
-// Inputs
 const roomNameInput = document.getElementById("room-name");
 const roomIdInput = document.getElementById("room-id");
 const maxUsersInput = document.getElementById("max-users");
@@ -44,11 +46,11 @@ const modeTitle = document.getElementById("mode-title");
 function getValidUsername() {
     const regex = /^[A-Za-z0-9 ]{1,15}$/;
     while (true) {
-        let name = prompt("Enter your name (max 15 characters):");
+        let name = prompt("Enter your name (Max 15 characters)");
         if (!name) continue;
         name = name.trim();
         if (regex.test(name)) return name;
-        alert("Invalid name!");
+        alert("Only letters and numbers, max 15 characters.");
     }
 }
 
@@ -59,12 +61,12 @@ function selectMode(mode) {
     actionScreen.style.display = "flex";
 
     modeTitle.innerText =
-        mode === "text" ? "Text Chat Mode" :
-        mode === "video" ? "Video Call Mode" :
-        "Video + Text Mode";
+        mode === "text" ? "TEXT CHAT MODE" :
+        mode === "video" ? "VIDEO CALL MODE" :
+        "VIDEO + TEXT MODE";
 }
 
-// ---------- ACTION SCREEN ----------
+// ---------- NAVIGATION ----------
 function showCreate() {
     actionScreen.style.display = "none";
     createScreen.style.display = "flex";
@@ -92,11 +94,9 @@ function createRoom() {
     ROOM_ID = roomIdInput.value.trim();
     MAX_USERS = parseInt(maxUsersInput.value);
 
-    const idRegex = /^[A-Za-z0-9]+$/;
-
     if (!ROOM_NAME || ROOM_NAME.length < 3) return alert("Enter valid Room Name");
-    if (!ROOM_ID || !idRegex.test(ROOM_ID)) return alert("Room ID only letters & numbers");
-    if (!MAX_USERS || MAX_USERS < 2 || MAX_USERS > 20) return alert("Max users 2-20");
+    if (!/^[A-Za-z0-9]+$/.test(ROOM_ID)) return alert("Room ID must be letters & numbers only");
+    if (!MAX_USERS || MAX_USERS < 2 || MAX_USERS > 20) return alert("Max users: 2 - 20");
 
     startRoom(true);
 }
@@ -104,9 +104,8 @@ function createRoom() {
 // ---------- JOIN ROOM ----------
 function joinRoom() {
     ROOM_ID = joinRoomIdInput.value.trim();
-    const idRegex = /^[A-Za-z0-9]+$/;
 
-    if (!ROOM_ID || !idRegex.test(ROOM_ID)) return alert("Enter valid Room ID");
+    if (!/^[A-Za-z0-9]+$/.test(ROOM_ID)) return alert("Enter valid Room ID");
 
     startRoom(false);
 }
@@ -131,26 +130,27 @@ function startRoom(isCreate) {
                 const data = snap.val();
 
                 if (data.mode !== CURRENT_MODE) {
-                    alert("This room is for another mode!");
-                    location.reload();
-                    return;
+                    alert("Room exists but mode is different!");
+                    return location.reload();
                 }
 
                 if (Object.keys(data.users || {}).length >= data.maxUsers) {
-                    alert("Room Full!");
-                    location.reload();
-                    return;
+                    alert("Room is full!");
+                    return location.reload();
                 }
             } else {
                 if (!isCreate) {
-                    alert("Room ID not found!");
-                    location.reload();
-                    return;
+                    alert("Room not found!");
+                    return location.reload();
                 }
 
+                HOST_ID = id;
+
                 roomRef.set({
-                    roomName: ROOM_NAME,
                     roomId: ROOM_ID,
+                    roomName: ROOM_NAME,
+                    host: DISPLAY_NAME,
+                    hostPeer: id,
                     mode: CURRENT_MODE,
                     maxUsers: MAX_USERS
                 });
@@ -184,7 +184,10 @@ function startRoom(isCreate) {
     peer.on("connection", setupDataConnection);
 
     if (CURRENT_MODE !== "text") {
-        navigator.mediaDevices.getUserMedia({ video: true, audio: true }).then(stream => {
+        navigator.mediaDevices.getUserMedia({
+            video: { width: 1280, height: 720 },
+            audio: { echoCancellation: true, noiseSuppression: true }
+        }).then(stream => {
             localStream = stream;
             document.getElementById("local-video").srcObject = stream;
         });
@@ -192,7 +195,7 @@ function startRoom(isCreate) {
 }
 // ===============================
 // VISIO - SCRIPT.JS (PART 2)
-// Video, Chat, Files, Media Status, Exit
+// Video • Chat • File • Media Status • Online Users • Exit
 // ===============================
 
 const videoGrid = document.getElementById("video-grid");
@@ -209,11 +212,12 @@ const fileBtn = document.getElementById("file-btn");
 const receivedFiles = {};
 const CHUNK_SIZE = 16000;
 
-// ---------- PEER CONNECTION ----------
+// ---------- PEER MEDIA CONNECTION ----------
 function callPeer(id) {
     if (connections[id]?.media) return;
     const call = peer.call(id, localStream);
     connections[id] = { media: call };
+
     call.on("stream", stream => addVideoStream(id, stream));
 }
 
@@ -228,19 +232,23 @@ function connectToPeer(id) {
 function setupDataConnection(conn) {
     conn.on("data", data => {
 
+        // Text Chat (Disabled in Video Only mode)
         if (data.type === "chat" && CURRENT_MODE !== "video") {
             displayMessage(data.user, data.text, false);
         }
 
+        // Image
         if (data.type === "image") {
             displayMessage(data.user, data.dataURL, false);
         }
 
+        // File Meta
         if (data.type === "file_meta") {
             receivedFiles[data.peerId] = { ...data, chunks: [], received: 0 };
-            displayMessage("System", `${data.sender} sent ${data.name}`, false);
+            displayMessage("System", `${data.sender} is sending ${data.name}`, false);
         }
 
+        // File Chunks
         if (data.type === "file_chunk") {
             const file = receivedFiles[data.peerId];
             file.chunks.push(data.chunk);
@@ -249,23 +257,26 @@ function setupDataConnection(conn) {
             if (file.received >= file.size) {
                 const blob = new Blob(file.chunks, { type: file.mime });
                 const url = URL.createObjectURL(blob);
+
                 const a = document.createElement("a");
                 a.href = url;
                 a.download = file.name;
-                a.textContent = "⬇ Download " + file.name;
+                a.innerText = "⬇ Download " + file.name;
                 a.style.color = "#38bdf8";
+
                 messagesContainer.appendChild(a);
                 delete receivedFiles[data.peerId];
             }
         }
 
+        // Media Status Sync
         if (data.type === "media_status") {
             updateMediaStatus(data.peerId, data.mic, data.cam);
         }
     });
 }
 
-// ---------- VIDEO ----------
+// ---------- VIDEO GRID ----------
 function addVideoStream(id, stream) {
     if (document.getElementById("wrap-" + id)) return;
 
@@ -304,7 +315,7 @@ function displayMessage(user, text, mine) {
     if (typeof text === "string" && text.startsWith("data:image")) {
         const img = document.createElement("img");
         img.src = text;
-        img.style.maxWidth = "200px";
+        img.style.maxWidth = "220px";
         img.style.borderRadius = "8px";
         div.innerHTML = `<b>${user}</b><br>`;
         div.appendChild(img);
@@ -318,7 +329,7 @@ function displayMessage(user, text, mine) {
 
 messageForm.onsubmit = e => {
     e.preventDefault();
-    if (CURRENT_MODE === "video") return;
+    if (CURRENT_MODE === "video") return; // no text in video-only
 
     const msg = messageInput.value.trim();
     if (!msg) return;
@@ -330,7 +341,7 @@ messageForm.onsubmit = e => {
     messageInput.value = "";
 };
 
-// ---------- FILE SEND ----------
+// ---------- FILE SHARE ----------
 fileBtn.onclick = () => fileInput.click();
 
 fileInput.onchange = () => {
