@@ -14,8 +14,11 @@
 </head>
 <body>
 
+<!-- HOME BUTTON FIXED -->
+<a href="index.html" class="home-fixed">🏠 Home</a>
+
 <!-- STEP 1: MODE SELECTION -->
-<div id="join-screen">
+<div id="join-screen" class="center-screen">
     <h2>Welcome to <span style="color:#38bdf8;">VISIO</span></h2>
     <p>Select Mode</p>
 
@@ -24,8 +27,8 @@
     <button class="mode-btn" onclick="selectMode('both')">🎥💬 Video + Text</button>
 </div>
 
-<!-- STEP 2: CREATE OR JOIN -->
-<div id="action-screen" style="display:none;">
+<!-- STEP 2: CREATE / JOIN -->
+<div id="action-screen" class="center-screen" style="display:none;">
     <h2 id="mode-title"></h2>
 
     <button class="room-btn create" onclick="showCreate()">➕ Create Room</button>
@@ -35,11 +38,11 @@
 </div>
 
 <!-- STEP 3A: CREATE ROOM -->
-<div id="create-screen" style="display:none;">
+<div id="create-screen" class="center-screen" style="display:none;">
     <h2>Create Room</h2>
 
     <input class="room-input" type="text" id="room-name" placeholder="Room Name">
-    <input class="room-input" type="text" id="room-id" placeholder="Room ID (A-Z, 0-9 only)">
+    <input class="room-input" type="text" id="room-id" placeholder="Room ID (A-Z, 0-9)">
     <input class="room-input" type="number" id="max-users" placeholder="Max Members (2-20)" min="2" max="20">
 
     <button class="room-btn create" onclick="createRoom()">Create</button>
@@ -47,7 +50,7 @@
 </div>
 
 <!-- STEP 3B: JOIN ROOM -->
-<div id="join-room-screen" style="display:none;">
+<div id="join-room-screen" class="center-screen" style="display:none;">
     <h2>Join Room</h2>
 
     <input class="room-input" type="text" id="join-room-id" placeholder="Enter Room ID">
@@ -58,15 +61,17 @@
 
 <!-- MAIN APP -->
 <div id="main-app" style="display:none;">
+
 <nav class="navbar dashboard-nav">
     <div class="nav-brand">VISIO</div>
     <div class="nav-links">
+        <span id="room-info"></span>
         <button class="cta-nav" onclick="leaveRoom()">← Exit</button>
-        <a href="index.html" class="cta-nav">🏠 Home</a>
     </div>
 </nav>
 
 <div id="app-container">
+
     <aside id="sidebar">
         <h3>Online Users</h3>
         <div id="online-users-list"></div>
@@ -77,7 +82,7 @@
         <div id="video-grid">
             <div class="video-wrapper">
                 <video id="local-video" muted autoplay playsinline></video>
-                <div class="name-label">You</div>
+                <div class="name-label">You (Host)</div>
                 <div class="media-status" id="status-local"></div>
             </div>
         </div>
@@ -98,6 +103,7 @@
                 <i class="fas fa-phone-slash"></i>
             </button>
         </form>
+
     </main>
 </div>
 </div>
