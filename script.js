@@ -1,6 +1,6 @@
 // ===============================
 // VISIO - SCRIPT.JS (PART 1)
-// Mode + Create/Join Flow + Room ID + Firebase + Peer Setup (FINAL FIXED)
+// Core Room + Mode + Firebase + Peer Setup (Glitch-Free)
 // ===============================
 
 const firebaseConfig = {
@@ -16,14 +16,15 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const database = firebase.database();
 
+// GLOBAL STATE
 let CURRENT_MODE = "";
-let ROOM_NAME = "";
 let ROOM_ID = "";
+let ROOM_NAME = "";
 let MAX_USERS = 0;
 let DISPLAY_NAME = "";
+let CREATOR_ID = "";
 
 let peer, myPeerId, localStream;
-
 const connections = {};
 const userNames = {};
 
@@ -44,7 +45,7 @@ const modeTitle = document.getElementById("mode-title");
 function getValidUsername() {
     const regex = /^[A-Za-z0-9 ]{1,15}$/;
     while (true) {
-        let name = prompt("Enter your name (max 15 characters):");
+        let name = prompt("Enter your name (max 15 chars):");
         if (!name) continue;
         name = name.trim();
         if (regex.test(name)) return name;
@@ -59,12 +60,12 @@ function selectMode(mode) {
     actionScreen.style.display = "flex";
 
     modeTitle.innerText =
-        mode === "text" ? "Text Chat Mode" :
-        mode === "video" ? "Video Call Mode" :
-        "Video + Text Mode";
+        mode === "text" ? "TEXT CHAT ROOM" :
+        mode === "video" ? "VIDEO CALL ROOM" :
+        "VIDEO + TEXT ROOM";
 }
 
-// ---------- NAV ----------
+// ---------- SCREEN NAV ----------
 function showCreate() {
     actionScreen.style.display = "none";
     createScreen.style.display = "flex";
@@ -86,7 +87,7 @@ function backToAction() {
     actionScreen.style.display = "flex";
 }
 
-// ---------- CREATE ROOM ----------
+// ---------- CREATE ----------
 function createRoom() {
     ROOM_NAME = roomNameInput.value.trim();
     ROOM_ID = roomIdInput.value.trim();
@@ -94,23 +95,25 @@ function createRoom() {
 
     const idRegex = /^[A-Za-z0-9]+$/;
 
-    if (!ROOM_NAME || ROOM_NAME.length < 3) return alert("Enter valid Room Name");
+    if (!ROOM_NAME || ROOM_NAME.length < 3) return alert("Room name too short");
     if (!ROOM_ID || !idRegex.test(ROOM_ID)) return alert("Room ID only letters & numbers");
     if (!MAX_USERS || MAX_USERS < 2 || MAX_USERS > 20) return alert("Max users 2-20");
 
     startRoom(true);
 }
 
-// ---------- JOIN ROOM ----------
+// ---------- JOIN ----------
 function joinRoom() {
     ROOM_ID = joinRoomIdInput.value.trim();
     const idRegex = /^[A-Za-z0-9]+$/;
-    if (!ROOM_ID || !idRegex.test(ROOM_ID)) return alert("Enter valid Room ID");
+
+    if (!ROOM_ID || !idRegex.test(ROOM_ID)) return alert("Invalid Room ID");
+
     startRoom(false);
 }
 
 // ---------- START ROOM ----------
-function startRoom(isCreate) {
+function startRoom(isCreator) {
     DISPLAY_NAME = getValidUsername();
 
     createScreen.style.display = "none";
@@ -129,29 +132,36 @@ function startRoom(isCreate) {
                 const data = snap.val();
 
                 if (data.mode !== CURRENT_MODE) {
-                    alert("This room is for another mode!");
+                    alert("Room mode mismatch!");
                     location.reload();
                     return;
                 }
 
                 if (Object.keys(data.users || {}).length >= data.maxUsers) {
-                    alert("Room is Full!");
-                    location.reload();
-                    return;
-                }
-            } else {
-                if (!isCreate) {
-                    alert("Room ID not found!");
+                    alert("Room Full!");
                     location.reload();
                     return;
                 }
 
+                CREATOR_ID = data.creator;
+                ROOM_NAME = data.roomName;
+                MAX_USERS = data.maxUsers;
+
+            } else {
+                if (!isCreator) {
+                    alert("Room not found!");
+                    location.reload();
+                    return;
+                }
+
+                CREATOR_ID = id;
+
                 roomRef.set({
-                    roomName: ROOM_NAME,
                     roomId: ROOM_ID,
+                    roomName: ROOM_NAME,
                     mode: CURRENT_MODE,
                     maxUsers: MAX_USERS,
-                    creator: DISPLAY_NAME
+                    creator: id
                 });
             }
 
@@ -171,8 +181,17 @@ function startRoom(isCreate) {
                     if (CURRENT_MODE !== "text") callPeer(user.peerId);
                 }
             });
+
+            setupRoomHeader();
         });
     });
+
+    if (CURRENT_MODE !== "text") {
+        navigator.mediaDevices.getUserMedia({ video: true, audio: true }).then(stream => {
+            localStream = stream;
+            document.getElementById("local-video").srcObject = stream;
+        });
+    }
 
     peer.on("call", call => {
         if (CURRENT_MODE === "text") return;
@@ -181,47 +200,148 @@ function startRoom(isCreate) {
     });
 
     peer.on("connection", setupDataConnection);
+}
 
-    if (CURRENT_MODE !== "text") {
-        navigator.mediaDevices.getUserMedia({ video: true, audio: true }).then(stream => {
-            localStream = stream;
-            document.getElementById("local-video").srcObject = stream;
-        });
-    }
+// ---------- ROOM HEADER ----------
+function setupRoomHeader() {
+    const bar = document.createElement("div");
+    bar.className = "room-info-bar";
+    bar.innerHTML = `
+        <span>Room: ${ROOM_NAME}</span>
+        <span>ID: ${ROOM_ID}</span>
+        <span>${myPeerId === CREATOR_ID ? "👑 Creator" : "Member"}</span>
+    `;
+    document.body.insertBefore(bar, document.getElementById("app-container"));
 }
 // ===============================
 // VISIO - SCRIPT.JS (PART 2)
-// Video + Chat + Files + Online Users + Media Controls (FINAL)
+// Video, Audio, Online Users, Mode UI Control
 // ===============================
 
 const videoGrid = document.getElementById("video-grid");
+const onlineUsersList = document.getElementById("online-users-list");
 const messagesContainer = document.getElementById("messages-container");
 const messageForm = document.getElementById("message-form");
 const messageInput = document.getElementById("message-input");
 const micToggle = document.getElementById("mic-toggle");
 const videoToggle = document.getElementById("video-toggle");
 const leaveCall = document.getElementById("leave-call");
-const onlineUsersList = document.getElementById("online-users-list");
-const fileInput = document.getElementById("file-input");
-const fileBtn = document.getElementById("file-btn");
 
-const receivedFiles = {};
-const CHUNK_SIZE = 16000;
+function applyModeUI() {
+    document.body.classList.remove("text-only", "video-only");
 
-// ---------- PEER CONNECTION ----------
+    if (CURRENT_MODE === "text") {
+        document.body.classList.add("text-only");
+    }
+    if (CURRENT_MODE === "video") {
+        document.body.classList.add("video-only");
+    }
+}
+
+// ---------- VIDEO STREAM ----------
+function addVideoStream(peerId, stream) {
+    if (document.getElementById("wrap-" + peerId)) return;
+
+    const wrapper = document.createElement("div");
+    wrapper.className = "video-wrapper";
+    wrapper.id = "wrap-" + peerId;
+
+    const video = document.createElement("video");
+    video.srcObject = stream;
+    video.autoplay = true;
+    video.playsInline = true;
+
+    const name = document.createElement("div");
+    name.className = "name-label";
+    name.innerText = userNames[peerId] || "User";
+
+    const status = document.createElement("div");
+    status.className = "media-status";
+    status.id = "status-" + peerId;
+
+    wrapper.append(video, name, status);
+    videoGrid.appendChild(wrapper);
+}
+
+// ---------- MEDIA TOGGLES ----------
+function broadcastStatus() {
+    if (!localStream) return;
+
+    const mic = localStream.getAudioTracks()[0].enabled;
+    const cam = localStream.getVideoTracks()[0].enabled;
+
+    Object.values(connections).forEach(c => {
+        c.data?.send({
+            type: "media_status",
+            peerId: myPeerId,
+            mic,
+            cam
+        });
+    });
+}
+
+micToggle.onclick = () => {
+    localStream.getAudioTracks()[0].enabled =
+        !localStream.getAudioTracks()[0].enabled;
+    broadcastStatus();
+};
+
+videoToggle.onclick = () => {
+    localStream.getVideoTracks()[0].enabled =
+        !localStream.getVideoTracks()[0].enabled;
+    broadcastStatus();
+};
+
+// ---------- ONLINE USERS ----------
+function addOnlineUser(id, name) {
+    if (document.getElementById("user-" + id)) return;
+
+    const p = document.createElement("p");
+    p.id = "user-" + id;
+    p.innerText = "🟢 " + name;
+    onlineUsersList.appendChild(p);
+}
+
+function removeOnlineUser(id) {
+    const el = document.getElementById("user-" + id);
+    if (el) el.remove();
+}
+
+// ---------- CONNECTION HANDLERS ----------
 function callPeer(id) {
     if (connections[id]?.media) return;
+
     const call = peer.call(id, localStream);
     connections[id] = { media: call };
+
     call.on("stream", stream => addVideoStream(id, stream));
 }
 
 function connectToPeer(id) {
     if (connections[id]?.data) return;
+
     const conn = peer.connect(id, { reliable: true });
     connections[id] = { ...connections[id], data: conn };
     setupDataConnection(conn);
 }
+
+// ---------- EXIT ----------
+function leaveRoom() {
+    if (peer) peer.destroy();
+    location.reload();
+}
+
+leaveCall.onclick = leaveRoom;
+// ===============================
+// VISIO - SCRIPT.JS (PART 3)
+// Chat, Files, Camera Switch, Media Status Sync
+// ===============================
+
+const fileInput = document.getElementById("file-input");
+const fileBtn = document.getElementById("file-btn");
+
+const receivedFiles = {};
+const CHUNK_SIZE = 16000;
 
 // ---------- DATA CHANNEL ----------
 function setupDataConnection(conn) {
@@ -248,11 +368,13 @@ function setupDataConnection(conn) {
             if (file.received >= file.size) {
                 const blob = new Blob(file.chunks, { type: file.mime });
                 const url = URL.createObjectURL(blob);
+
                 const a = document.createElement("a");
                 a.href = url;
                 a.download = file.name;
                 a.textContent = "⬇ Download " + file.name;
                 a.style.color = "#38bdf8";
+
                 messagesContainer.appendChild(a);
                 delete receivedFiles[data.peerId];
             }
@@ -262,37 +384,6 @@ function setupDataConnection(conn) {
             updateMediaStatus(data.peerId, data.mic, data.cam);
         }
     });
-}
-
-// ---------- VIDEO GRID ----------
-function addVideoStream(id, stream) {
-    if (document.getElementById("wrap-" + id)) return;
-
-    const wrapper = document.createElement("div");
-    wrapper.className = "video-wrapper";
-    wrapper.id = "wrap-" + id;
-
-    const video = document.createElement("video");
-    video.srcObject = stream;
-    video.autoplay = true;
-    video.playsInline = true;
-
-    const name = document.createElement("div");
-    name.className = "name-label";
-    name.innerText = userNames[id] || "User";
-
-    const status = document.createElement("div");
-    status.className = "media-status";
-    status.id = "status-" + id;
-
-    wrapper.append(video, name, status);
-    videoGrid.appendChild(wrapper);
-}
-
-function updateMediaStatus(id, mic, cam) {
-    const el = document.getElementById("status-" + id);
-    if (!el) return;
-    el.innerText = (!mic ? "🔇 " : "") + (!cam ? "🚫" : "");
 }
 
 // ---------- CHAT ----------
@@ -323,13 +414,15 @@ messageForm.onsubmit = e => {
     if (!msg) return;
 
     displayMessage(DISPLAY_NAME, msg, true);
+
     Object.values(connections).forEach(c =>
         c.data?.send({ type: "chat", user: DISPLAY_NAME, text: msg })
     );
+
     messageInput.value = "";
 };
 
-// ---------- FILE SEND ----------
+// ---------- IMAGE & FILE SEND ----------
 fileBtn.onclick = () => fileInput.click();
 
 fileInput.onchange = () => {
@@ -377,105 +470,9 @@ fileInput.onchange = () => {
     readNextChunk();
 };
 
-// ---------- MIC & CAMERA ----------
-function broadcastStatus() {
-    if (!localStream) return;
+// ---------- CAMERA SWITCH (FRONT / BACK) ----------
+let currentCamera = "user";
 
-    const mic = localStream.getAudioTracks()[0].enabled;
-    const cam = localStream.getVideoTracks()[0].enabled;
-
-    Object.values(connections).forEach(c =>
-        c.data?.send({ type: "media_status", peerId: myPeerId, mic, cam })
-    );
-}
-
-micToggle.onclick = () => {
-    localStream.getAudioTracks()[0].enabled = !localStream.getAudioTracks()[0].enabled;
-    broadcastStatus();
-};
-
-videoToggle.onclick = () => {
-    localStream.getVideoTracks()[0].enabled = !localStream.getVideoTracks()[0].enabled;
-    broadcastStatus();
-};
-
-// ---------- ONLINE USERS ----------
-function addOnlineUser(id, name) {
-    const p = document.createElement("p");
-    p.id = "user-" + id;
-    p.innerText = "🟢 " + name;
-    onlineUsersList.appendChild(p);
-}
-
-// ---------- EXIT ----------
-function leaveRoom() {
-    if (peer) peer.destroy();
-    location.reload();
-}
-
-leaveCall.onclick = leaveRoom;
-// ===============================
-// VISIO - SCRIPT.JS (PART 3)
-// Room Info Bar + Mode Lock + Creator + Camera Switch + Stability
-// ===============================
-
-let ROOM_CREATOR = "";
-let currentCamera = "user"; // front camera default
-
-const roomInfoBar = document.createElement("div");
-roomInfoBar.className = "room-info-bar";
-roomInfoBar.innerHTML = `
-    <span id="room-name-label"></span>
-    <span id="room-id-label"></span>
-    <span id="room-creator-label"></span>
-`;
-document.getElementById("main-content").prepend(roomInfoBar);
-
-// ---------- SHOW ROOM DETAILS ----------
-function showRoomInfo(name, id, creator) {
-    document.getElementById("room-name-label").innerText = "Room: " + name;
-    document.getElementById("room-id-label").innerText = "ID: " + id;
-    document.getElementById("room-creator-label").innerHTML =
-        "Creator: " + creator + ' <span class="creator-badge">Host</span>';
-}
-
-// ---------- SAVE CREATOR ----------
-function setCreatorIfFirst(roomRef, myId) {
-    roomRef.child("creator").once("value", snap => {
-        if (!snap.exists()) {
-            roomRef.child("creator").set({
-                name: DISPLAY_NAME,
-                peerId: myId
-            });
-            ROOM_CREATOR = DISPLAY_NAME;
-        } else {
-            ROOM_CREATOR = snap.val().name;
-        }
-
-        showRoomInfo(ROOM_NAME || "VISIO Room", ROOM_ID, ROOM_CREATOR);
-    });
-}
-
-// Call this inside peer.on("open") after roomRef is defined
-// setCreatorIfFirst(roomRef, id);
-
-// ---------- STRICT MODE LOCK ----------
-function applyModeLock() {
-    document.body.classList.remove("text-only", "video-only");
-
-    if (CURRENT_MODE === "text") {
-        document.body.classList.add("text-only");
-    }
-
-    if (CURRENT_MODE === "video") {
-        document.body.classList.add("video-only");
-    }
-}
-
-// Call this once room loads
-// applyModeLock();
-
-// ---------- CAMERA SWITCH ----------
 async function switchCamera() {
     if (!localStream) return;
 
@@ -488,37 +485,14 @@ async function switchCamera() {
 
     localStream.getTracks().forEach(t => t.stop());
     localStream = newStream;
+
     document.getElementById("local-video").srcObject = newStream;
 
-    // Replace tracks for all peers
-    Object.values(connections).forEach(conn => {
-        if (conn.media) {
-            const sender = conn.media.peerConnection.getSenders()
+    Object.values(connections).forEach(c => {
+        if (c.media) {
+            const sender = c.media.peerConnection.getSenders()
                 .find(s => s.track.kind === "video");
-            if (sender) sender.replaceTrack(newStream.getVideoTracks()[0]);
+            sender.replaceTrack(newStream.getVideoTracks()[0]);
         }
     });
 }
-
-// Add button dynamically
-const camSwitchBtn = document.createElement("button");
-camSwitchBtn.className = "control-btn";
-camSwitchBtn.innerText = "🔄";
-camSwitchBtn.title = "Switch Camera";
-camSwitchBtn.onclick = switchCamera;
-document.getElementById("message-form").appendChild(camSwitchBtn);
-
-// ---------- CONNECTION STABILITY ----------
-peer.on("disconnected", () => {
-    console.log("Reconnecting...");
-    peer.reconnect();
-});
-
-peer.on("error", err => {
-    console.error("Peer error:", err);
-});
-
-// ---------- CLEAN EXIT ----------
-window.addEventListener("beforeunload", () => {
-    if (peer) peer.destroy();
-});
