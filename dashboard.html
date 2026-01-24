@@ -17,25 +17,28 @@
 </head>
 <body>
 
-<!-- TOP NAV -->
+<!-- NAVBAR -->
 <nav class="navbar">
-    <div class="nav-brand">VISIO</div>
     <div class="nav-links">
         <a href="index.html" class="cta-nav">🏠 Home</a>
+    </div>
+    <div class="nav-brand">VISIO</div>
+    <div class="nav-links">
+        <button class="cta-nav" onclick="leaveRoom()">Exit</button>
     </div>
 </nav>
 
 <!-- STEP 1: MODE SELECTION -->
 <div id="join-screen">
     <h2>Welcome to <span style="color:#38bdf8;">VISIO</span></h2>
-    <p>Select Communication Mode</p>
+    <p>Select Mode</p>
 
     <button class="mode-btn" onclick="selectMode('text')">💬 Text Only</button>
     <button class="mode-btn" onclick="selectMode('video')">🎥 Video Only</button>
     <button class="mode-btn" onclick="selectMode('both')">🎥💬 Video + Text</button>
 </div>
 
-<!-- STEP 2: CREATE OR JOIN -->
+<!-- STEP 2: CREATE / JOIN -->
 <div id="action-screen" style="display:none;">
     <h2 id="mode-title"></h2>
 
@@ -50,7 +53,7 @@
     <h2>Create Room</h2>
 
     <input class="room-input" type="text" id="room-name" placeholder="Room Name">
-    <input class="room-input" type="text" id="room-id" placeholder="Room ID (Letters & Numbers)">
+    <input class="room-input" type="text" id="room-id" placeholder="Room ID (A-Z, 0-9)">
     <input class="room-input" type="number" id="max-users" placeholder="Max Members (2-20)" min="2" max="20">
 
     <button class="room-btn create" onclick="createRoom()">Create</button>
@@ -70,20 +73,8 @@
 <!-- MAIN APP -->
 <div id="main-app" style="display:none;">
 
-    <!-- ROOM INFO BAR -->
-    <div class="room-info-bar">
-        <span id="room-info-name">Room:</span>
-        <span id="room-info-id">ID:</span>
-        <span id="room-info-creator">Creator:</span>
-    </div>
-
-    <nav class="navbar dashboard-nav">
-        <div class="nav-brand">VISIO</div>
-        <div class="nav-links">
-            <button class="cta-nav" onclick="leaveRoom()">← Exit</button>
-            <a href="index.html" class="cta-nav">🏠 Home</a>
-        </div>
-    </nav>
+    <!-- ROOM INFO BAR (Filled by JS) -->
+    <div class="room-info-bar"></div>
 
     <div id="app-container">
 
@@ -116,10 +107,6 @@
 
                 <button id="video-toggle" type="button" class="control-btn">
                     <i class="fas fa-video"></i>
-                </button>
-
-                <button id="camera-switch" type="button" class="control-btn">
-                    <i class="fas fa-sync-alt"></i>
                 </button>
 
                 <button type="submit" class="control-btn">
