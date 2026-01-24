@@ -321,3 +321,104 @@ footer {
     background: #020617;
     font-size: 14px;
 }
+/* ============================
+   VISIO EXTRA UI ENHANCEMENTS
+   (Append Only - Do Not Remove Existing CSS)
+   ============================ */
+
+/* Smooth Screen Transitions */
+#join-screen, #action-screen, #create-screen, #join-room-screen, #room-screen {
+    animation: fadeIn 0.4s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.96); }
+    to   { opacity: 1; transform: scale(1); }
+}
+
+/* Center Create & Join Steps */
+#action-screen, #create-screen, #join-room-screen {
+    position: fixed;
+    inset: 0;
+    background: linear-gradient(135deg, #020617, #0b1120);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    z-index: 9999;
+}
+
+/* Stack Buttons One by One */
+#action-screen button,
+#create-screen input,
+#create-screen button,
+#join-room-screen input,
+#join-room-screen button {
+    margin: 10px 0;
+}
+
+/* Home Button Top-Left Always */
+.navbar .nav-links {
+    display: flex;
+    align-items: center;
+}
+
+.navbar .cta-nav:first-child {
+    margin-left: 0;
+}
+
+/* Room Info Bar (Name + ID + Creator) */
+.room-info-bar {
+    background: #020617;
+    padding: 10px;
+    text-align: center;
+    font-size: 14px;
+    border-bottom: 1px solid #1e293b;
+}
+
+.room-info-bar span {
+    margin: 0 10px;
+    color: #38bdf8;
+    font-weight: bold;
+}
+
+/* Creator Badge */
+.creator-badge {
+    background: #16a34a;
+    padding: 2px 6px;
+    border-radius: 6px;
+    font-size: 11px;
+    margin-left: 6px;
+}
+
+/* Online Users Styling */
+#online-users-list p {
+    padding: 6px 4px;
+    font-size: 14px;
+    border-bottom: 1px solid #1e293b;
+}
+
+/* Hide Chat Properly in Video Mode */
+.video-only #messages-container,
+.video-only #message-form {
+    display: none !important;
+}
+
+/* Hide Video Properly in Text Mode */
+.text-only #video-grid {
+    display: none !important;
+}
+
+/* Better Video Quality Scaling */
+.video-wrapper video {
+    image-rendering: high-quality;
+}
+
+/* Mobile Controls Bigger */
+@media (max-width: 600px) {
+    .control-btn {
+        padding: 12px;
+        font-size: 16px;
+    }
+}
