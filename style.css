@@ -387,3 +387,56 @@ body {
         bottom: 15px;
     }
 }
+/* ========================================
+   ABOUT SECTION FIXED ALIGNMENT
+======================================== */
+
+.about-section {
+    background: #0f172a;
+    padding: 120px 20px;
+}
+
+.about-wrapper {
+    max-width: 1100px;
+    margin: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 60px;
+    flex-wrap: wrap;
+}
+
+.about-image {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+}
+
+.profile-photo {
+    width: 320px;
+    max-width: 100%;
+    border-radius: 25px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+}
+
+.about-text {
+    flex: 1;
+    max-width: 500px;
+}
+
+.about-text h2 {
+    font-size: 34px;
+    margin-bottom: 20px;
+}
+
+.about-text p {
+    margin-bottom: 18px;
+    line-height: 1.7;
+    opacity: 0.9;
+}
+
+.about-highlight {
+    font-weight: 600;
+    color: #38bdf8;
+}
+
