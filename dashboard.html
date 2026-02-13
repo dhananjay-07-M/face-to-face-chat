@@ -1,124 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>VISIO Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Google Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="/style.css">
+
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/7.14.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/7.14.0/firebase-database.js"></script>
+
+    <!-- PeerJS -->
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+</head>
+
 <body class="dashboard-body">
 
-    <!-- NAVBAR -->
-    <nav class="navbar modern-nav">
-        <div class="nav-left">
-            <i class="fas fa-comments app-logo"></i>
-            <span class="app-title">VISIO Connect</span>
-        </div>
-        <div class="nav-right">
-            <button class="exit-btn" onclick="location.reload()">
-                <i class="fas fa-sign-out-alt"></i> Exit
-            </button>
-        </div>
-    </nav>
+<nav class="navbar">
+    <div class="nav-brand">VISIO</div>
+    <div class="nav-links">
+        <a href="index.html">Home</a>
+        <button onclick="location.reload()" class="cta-nav">Exit</button>
+    </div>
+</nav>
 
-    <!-- MODE SELECTION -->
-    <div id="join-screen" class="center-screen">
-        <div class="mode-card">
-            <h2>Select Communication Mode</h2>
-            <div class="mode-grid">
-                <button class="mode-btn whatsapp" onclick="selectMode('text')">
-                    <i class="fab fa-whatsapp"></i>
-                    WhatsApp Group Chat
-                </button>
+<!-- MODE SCREEN -->
+<div id="join-screen">
+    <h2>Select Communication Mode</h2>
+    <button class="mode-btn" onclick="selectMode('text')">Text Group</button>
+    <button class="mode-btn" onclick="selectMode('video')">Video Meeting</button>
+    <button class="mode-btn" onclick="selectMode('both')">Video + Text</button>
+</div>
 
-                <button class="mode-btn zoom" onclick="selectMode('video')">
-                    <i class="fas fa-video"></i>
-                    Zoom Video Meeting
-                </button>
+<!-- ACTION SCREEN -->
+<div id="action-screen" style="display:none;">
+    <h2 id="mode-title"></h2>
+    <input type="text" id="room-name" placeholder="Room Name">
+    <input type="text" id="room-id" placeholder="Room ID">
+    <input type="number" id="max-users" placeholder="Max Users (2-20)">
+    <button class="room-btn" onclick="createRoom()">Create Room</button>
 
-                <button class="mode-btn both" onclick="selectMode('both')">
-                    <i class="fas fa-layer-group"></i>
-                    Hybrid Mode
-                </button>
+    <input type="text" id="join-room-id" placeholder="Join Room ID">
+    <button class="room-btn" onclick="joinRoom()">Join Room</button>
+</div>
+
+<!-- MAIN APP -->
+<div id="main-app" style="display:none;">
+
+    <div id="app-container">
+
+        <aside id="sidebar">
+            <h3>Participants</h3>
+            <div id="online-users-list"></div>
+        </aside>
+
+        <main id="main-content">
+
+            <div id="video-grid">
+                <div class="video-wrapper">
+                    <video id="local-video" autoplay muted playsinline></video>
+                    <div class="name-label">You</div>
+                </div>
             </div>
-        </div>
+
+            <div id="chat-section">
+                <div id="messages-container"></div>
+
+                <form id="message-form">
+                    <input type="file" id="file-input" hidden>
+                    <button type="button" id="file-btn">📎</button>
+                    <input type="text" id="message-input" placeholder="Type a message...">
+                    <button type="submit">➤</button>
+                </form>
+            </div>
+
+            <div class="floating-controls">
+                <button id="mic-toggle" class="ctrl-btn">🎤</button>
+                <button id="video-toggle" class="ctrl-btn">📷</button>
+                <button id="leave-call" class="ctrl-btn end-call">❌</button>
+            </div>
+
+        </main>
     </div>
 
-    <!-- ACTION SCREEN -->
-    <div id="action-screen" class="center-screen" style="display:none;">
-        <div class="action-card">
-            <h2 id="mode-title"></h2>
-            <button class="room-btn create" onclick="showCreate()">Create Room</button>
-            <button class="room-btn join" onclick="showJoin()">Join Room</button>
-            <button class="room-btn back" onclick="backToMode()">Back</button>
-        </div>
-    </div>
+</div>
 
-    <!-- MAIN APP -->
-    <div id="main-app" style="display:none;">
+<script src="/script.js"></script>
 
-        <div id="app-container">
-
-            <!-- SIDEBAR (Zoom Style) -->
-            <aside id="sidebar" class="zoom-sidebar">
-                <div class="sidebar-header">
-                    <i class="fas fa-users"></i> Participants
-                </div>
-                <div id="online-users-list"></div>
-            </aside>
-
-            <!-- MAIN CONTENT -->
-            <main id="main-content">
-
-                <!-- VIDEO GRID (Zoom Style) -->
-                <div id="video-grid" class="zoom-grid">
-                    <div class="video-wrapper" id="local-video-container">
-                        <video id="local-video" muted autoplay playsinline></video>
-                        <div class="name-label">You</div>
-                    </div>
-                </div>
-
-                <!-- CHAT SECTION (WhatsApp Style) -->
-                <div id="chat-section" class="whatsapp-chat">
-                    
-                    <div class="chat-header">
-                        <i class="fas fa-user-friends"></i> Group Chat
-                    </div>
-
-                    <div id="messages-container" class="chat-messages"></div>
-
-                    <form id="message-form" class="chat-input-area">
-                        <input type="file" id="file-input" hidden>
-
-                        <button type="button" id="file-btn" class="chat-icon">
-                            <i class="fas fa-paperclip"></i>
-                        </button>
-
-                        <input type="text" id="message-input" 
-                               placeholder="Type a message..." 
-                               autocomplete="off">
-
-                        <button type="submit" class="chat-icon send-btn">
-                            <i class="fas fa-paper-plane"></i>
-                        </button>
-                    </form>
-                </div>
-
-                <!-- FLOATING CONTROLS (Zoom Bottom Controls) -->
-                <div class="zoom-controls">
-                    <button id="mic-toggle" class="ctrl-btn">
-                        <i class="fas fa-microphone"></i>
-                    </button>
-
-                    <button id="video-toggle" class="ctrl-btn">
-                        <i class="fas fa-video"></i>
-                    </button>
-
-                    <button id="camera-switch" onclick="switchCamera()" class="ctrl-btn">
-                        <i class="fas fa-sync"></i>
-                    </button>
-
-                    <button id="leave-call" onclick="location.reload()" 
-                            class="ctrl-btn end-call">
-                        <i class="fas fa-phone-slash"></i>
-                    </button>
-                </div>
-
-            </main>
-        </div>
-    </div>
-
-    <script src="script.js"></script>
 </body>
+</html>
