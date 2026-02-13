@@ -1,6 +1,5 @@
 // =====================================================
-// VISIO - FINAL CLEAN ADVANCED VERSION
-// Direct Mode → Username → Enter Room
+// VISIO - FINAL STABLE PRODUCTION VERSION
 // =====================================================
 
 // ---------------- FIREBASE ----------------
@@ -17,13 +16,12 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const database = firebase.database();
 
-// ---------------- GLOBAL STATE ----------------
+// ---------------- GLOBAL ----------------
 let CURRENT_MODE = "";
 let ROOM_ID = "";
 let ROOM_NAME = "";
 let DISPLAY_NAME = "";
 let MAX_USERS = 50;
-let CREATOR_ID = "";
 
 let peer = null;
 let myPeerId = null;
@@ -34,144 +32,125 @@ const userNames = {};
 const receivedFiles = {};
 const CHUNK_SIZE = 16000;
 
-// ---------------- SAFE GET ----------------
-function get(id) {
-    return document.getElementById(id);
-}
+function get(id){ return document.getElementById(id); }
 
 // =====================================================
-// DIRECT MODE START
+// DIRECT START
 // =====================================================
 
-window.startInstant = function(mode) {
+window.startInstant = function(mode){
 
     CURRENT_MODE = mode;
 
-    if (mode === "text") ROOM_ID = "text-room";
-    if (mode === "video") ROOM_ID = "video-room";
-    if (mode === "both") ROOM_ID = "hybrid-room";
+    if(mode==="text") ROOM_ID="text-room";
+    if(mode==="video") ROOM_ID="video-room";
+    if(mode==="both") ROOM_ID="hybrid-room";
 
     ROOM_NAME = ROOM_ID;
 
     DISPLAY_NAME = prompt("Enter your name (max 15 chars):");
-    if (!DISPLAY_NAME) return;
+    if(!DISPLAY_NAME) return;
 
-    get("join-screen").style.display = "none";
-    get("main-app").style.display = "block";
+    applyModeUI();
+
+    get("join-screen").style.display="none";
+    get("main-app").style.display="block";
 
     startRoom();
 };
 
 // =====================================================
+// MODE VALIDATION
+// =====================================================
+
+function applyModeUI(){
+
+    document.body.classList.remove("video-only","text-only");
+
+    if(CURRENT_MODE==="video")
+        document.body.classList.add("video-only");
+
+    if(CURRENT_MODE==="text")
+        document.body.classList.add("text-only");
+}
+
+// =====================================================
 // START ROOM
 // =====================================================
 
-async function startRoom() {
+async function startRoom(){
 
-    myPeerId = "visio_" + Math.random().toString(36).substr(2, 9);
+    myPeerId = "visio_"+Math.random().toString(36).substr(2,9);
 
-    peer = new Peer(myPeerId, {
-        host: "peerjs-server.herokuapp.com",
-        secure: true,
-        port: 443
-    });
+    // 🔥 FIXED: use default PeerJS cloud
+    peer = new Peer(myPeerId);
 
-    const roomRef = database.ref("rooms/" + ROOM_ID);
+    const roomRef = database.ref("rooms/"+ROOM_ID);
 
-    peer.on("open", id => {
+    peer.on("open", id=>{
 
-        roomRef.once("value", snap => {
+        roomRef.child("users/"+id).set({
+            name: DISPLAY_NAME,
+            peerId: id
+        });
 
-            if (!snap.exists()) {
+        roomRef.child("users/"+id).onDisconnect().remove();
 
-                CREATOR_ID = id;
+        roomRef.child("users").on("child_added", snap=>{
+            const user = snap.val();
+            userNames[user.peerId] = user.name;
 
-                roomRef.set({
-                    roomId: ROOM_ID,
-                    roomName: ROOM_NAME,
-                    mode: CURRENT_MODE,
-                    maxUsers: MAX_USERS,
-                    creator: id
-                });
-            } else {
-                const data = snap.val();
-                CREATOR_ID = data.creator;
-            }
+            addOnlineUser(user.peerId,user.name);
 
-            roomRef.child("users/" + id).set({
-                name: DISPLAY_NAME,
-                peerId: id
-            });
+            if(user.peerId!==id){
+                connectToPeer(user.peerId);
 
-            roomRef.child("users/" + id).onDisconnect().remove();
-
-            roomRef.child("users").on("child_added", snap => {
-                const user = snap.val();
-                userNames[user.peerId] = user.name;
-
-                addOnlineUser(user.peerId, user.name);
-
-                if (user.peerId !== id) {
-                    connectToPeer(user.peerId);
-                    if (CURRENT_MODE !== "text")
-                        callPeer(user.peerId);
+                if(CURRENT_MODE!=="text"){
+                    callPeer(user.peerId);
                 }
-            });
+            }
+        });
 
-            roomRef.child("users").on("child_removed", snap => {
-                removeOnlineUser(snap.val().peerId);
-            });
-
-            setupRoomHeader();
+        roomRef.child("users").on("child_removed", snap=>{
+            removeOnlineUser(snap.val().peerId);
         });
     });
 
-    if (CURRENT_MODE !== "text") {
+    if(CURRENT_MODE!=="text"){
         localStream = await navigator.mediaDevices.getUserMedia({
-            video: true,
-            audio: true
+            video:true,
+            audio:true
         });
 
         get("local-video").srcObject = localStream;
     }
 
-    peer.on("call", call => {
+    peer.on("call", call=>{
         call.answer(localStream);
-        call.on("stream", stream => addVideoStream(call.peer, stream));
+        call.on("stream", stream=>{
+            addVideoStream(call.peer,stream);
+        });
     });
 
     peer.on("connection", setupDataConnection);
 }
 
 // =====================================================
-// ROOM HEADER
-// =====================================================
-
-function setupRoomHeader() {
-    const bar = document.createElement("div");
-    bar.className = "room-info-bar";
-    bar.innerHTML = `
-        <span>Room: ${ROOM_NAME}</span>
-        <span>${myPeerId === CREATOR_ID ? "👑 Creator" : "Member"}</span>
-    `;
-    document.body.insertBefore(bar, get("app-container"));
-}
-
-// =====================================================
 // VIDEO
 // =====================================================
 
-function addVideoStream(peerId, stream) {
-    if (get("wrap-" + peerId)) return;
+function addVideoStream(peerId,stream){
 
-    const wrapper = document.createElement("div");
-    wrapper.className = "video-wrapper";
-    wrapper.id = "wrap-" + peerId;
+    if(get("wrap-"+peerId)) return;
 
-    const video = document.createElement("video");
-    video.srcObject = stream;
-    video.autoplay = true;
-    video.playsInline = true;
+    const wrapper=document.createElement("div");
+    wrapper.className="video-wrapper";
+    wrapper.id="wrap-"+peerId;
+
+    const video=document.createElement("video");
+    video.srcObject=stream;
+    video.autoplay=true;
+    video.playsInline=true;
 
     wrapper.appendChild(video);
     get("video-grid").appendChild(wrapper);
@@ -181,186 +160,135 @@ function addVideoStream(peerId, stream) {
 // CHAT
 // =====================================================
 
-function displayMessage(user, text, mine) {
-
-    const div = document.createElement("div");
-    div.className = mine ? "chat-bubble mine" : "chat-bubble other";
-
-    const time = new Date().toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit"
-    });
-
-    div.innerHTML = `
-        <div class="bubble-header">${mine ? "You" : user}</div>
-        <div class="bubble-text">${text}</div>
-        <div class="bubble-time">${time}</div>
-    `;
-
-    get("messages-container").appendChild(div);
-    get("messages-container").scrollTop =
-        get("messages-container").scrollHeight;
-}
-
-get("message-form")?.addEventListener("submit", e => {
+get("message-form")?.addEventListener("submit",e=>{
 
     e.preventDefault();
 
-    if (CURRENT_MODE === "video") return;
+    if(CURRENT_MODE==="video") return;
 
-    const input = get("message-input");
-    const msg = input.value.trim();
-    if (!msg) return;
+    const input=get("message-input");
+    const msg=input.value.trim();
+    if(!msg) return;
 
-    displayMessage(DISPLAY_NAME, msg, true);
-
-    broadcast({ type: "chat", user: DISPLAY_NAME, text: msg });
-
-    input.value = "";
-});
-
-// =====================================================
-// FILE SYSTEM
-// =====================================================
-
-get("file-btn")?.addEventListener("click", () => {
-    get("file-input").click();
-});
-
-get("file-input")?.addEventListener("change", e => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    if (file.type.startsWith("image/")) {
-        const reader = new FileReader();
-        reader.onload = ev => {
-            broadcast({ type: "image", user: DISPLAY_NAME, text: ev.target.result });
-            displayMessage(DISPLAY_NAME, "[Image]", true);
-        };
-        reader.readAsDataURL(file);
-    } else {
-        sendFile(file);
-    }
-});
-
-// =====================================================
-// FILE CHUNK SYSTEM
-// =====================================================
-
-function sendFile(file) {
+    displayMessage(DISPLAY_NAME,msg,true);
 
     broadcast({
-        type: "file_meta",
-        name: file.name,
-        size: file.size,
-        mime: file.type,
-        peerId: myPeerId
+        type:"chat",
+        user:DISPLAY_NAME,
+        text:msg
     });
 
-    const reader = new FileReader();
-    let offset = 0;
+    input.value="";
+});
 
-    reader.onload = e => {
-        broadcast({
-            type: "file_chunk",
-            peerId: myPeerId,
-            chunk: e.target.result
-        });
+function displayMessage(user,text,mine){
 
-        offset += e.target.result.byteLength;
-        if (offset < file.size) readNext();
-    };
+    const div=document.createElement("div");
+    div.className=mine?"chat-bubble mine":"chat-bubble other";
 
-    function readNext() {
-        const slice = file.slice(offset, offset + CHUNK_SIZE);
-        reader.readAsArrayBuffer(slice);
-    }
+    div.innerHTML=`<b>${mine?"You":user}</b><br>${text}`;
+    get("messages-container").appendChild(div);
 
-    readNext();
+    get("messages-container").scrollTop =
+        get("messages-container").scrollHeight;
 }
 
 // =====================================================
 // DATA CONNECTION
 // =====================================================
 
-function setupDataConnection(conn) {
+function setupDataConnection(conn){
 
-    conn.on("data", data => {
+    conn.on("data",data=>{
 
-        if (data.type === "chat")
-            displayMessage(data.user, data.text, false);
-
-        if (data.type === "image")
-            displayMessage(data.user, "[Image]", false);
-
-        if (data.type === "file_meta")
-            receivedFiles[data.peerId] = { ...data, chunks: [], received: 0 };
-
-        if (data.type === "file_chunk") {
-            const file = receivedFiles[data.peerId];
-            file.chunks.push(data.chunk);
-            file.received += data.chunk.byteLength;
-
-            if (file.received >= file.size) {
-                const blob = new Blob(file.chunks, { type: file.mime });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement("a");
-                a.href = url;
-                a.download = file.name;
-                a.textContent = "Download " + file.name;
-                get("messages-container").appendChild(a);
-            }
+        if(data.type==="chat"){
+            displayMessage(data.user,data.text,false);
         }
     });
 }
 
-// =====================================================
-// PEER CONNECTIONS
-// =====================================================
+function connectToPeer(id){
 
-function callPeer(id) {
-    const call = peer.call(id, localStream);
-    connections[id] = { media: call };
+    if(connections[id]) return;
 
-    call.on("stream", stream => addVideoStream(id, stream));
+    const conn=peer.connect(id,{reliable:true});
+    connections[id]={data:conn};
+
+    conn.on("open",()=>{
+        console.log("Connected to",id);
+    });
+
+    setupDataConnection(conn);
 }
 
-function connectToPeer(id) {
-    const conn = peer.connect(id, { reliable: true });
-    connections[id] = { data: conn };
-    setupDataConnection(conn);
+function callPeer(id){
+
+    const call=peer.call(id,localStream);
+    connections[id]={media:call};
+
+    call.on("stream",stream=>{
+        addVideoStream(id,stream);
+    });
 }
 
 // =====================================================
 // BROADCAST
 // =====================================================
 
-function broadcast(data) {
-    Object.values(connections).forEach(c =>
-        c.data?.send(data)
-    );
+function broadcast(data){
+    Object.values(connections).forEach(c=>{
+        c.data?.send(data);
+    });
 }
 
 // =====================================================
 // ONLINE USERS
 // =====================================================
 
-function addOnlineUser(id, name) {
-    const p = document.createElement("p");
-    p.id = "user-" + id;
-    p.innerText = "🟢 " + name;
+function addOnlineUser(id,name){
+
+    if(get("user-"+id)) return;
+
+    const p=document.createElement("p");
+    p.id="user-"+id;
+    p.innerText="🟢 "+name;
+
     get("online-users-list").appendChild(p);
 }
 
-function removeOnlineUser(id) {
-    get("user-" + id)?.remove();
+function removeOnlineUser(id){
+    get("user-"+id)?.remove();
 }
 
 // =====================================================
-// EXIT
+// CONTROLS
 // =====================================================
 
-get("leave-call")?.addEventListener("click", () => {
+get("mic-toggle")?.addEventListener("click",()=>{
+
+    if(!localStream) return;
+
+    const track=localStream.getAudioTracks()[0];
+    track.enabled=!track.enabled;
+
+    get("mic-toggle").innerHTML =
+        track.enabled ? "🎤" : "🎤❌";
+});
+
+get("video-toggle")?.addEventListener("click",()=>{
+
+    if(!localStream) return;
+
+    const track=localStream.getVideoTracks()[0];
+    track.enabled=!track.enabled;
+
+    get("video-toggle").innerHTML =
+        track.enabled ? "📷" : "📷❌";
+});
+
+get("leave-call")?.addEventListener("click",()=>{
+
+    localStream?.getTracks().forEach(t=>t.stop());
     peer?.destroy();
     location.reload();
 });
