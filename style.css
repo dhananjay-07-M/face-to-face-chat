@@ -1,5 +1,5 @@
 /* ========================================
-   VISIO - FINAL PRODUCTION STABLE UI
+   VISIO - FINAL STABLE PRODUCTION UI
 ======================================== */
 
 * {
@@ -44,14 +44,10 @@ body {
     font-weight: 700;
 }
 
-.nav-links a,
-.nav-links button {
+.nav-links a {
     color: #fff;
     margin-left: 20px;
     text-decoration: none;
-    border: none;
-    background: none;
-    cursor: pointer;
     transition: 0.3s;
 }
 
@@ -66,11 +62,11 @@ body {
 }
 
 /* ========================================
-   HERO SECTION (HOME PAGE)
+   HERO SECTION
 ======================================== */
 
 #hero-section {
-    height: 100vh;
+    min-height: 100vh;
     padding-top: 80px;
     background: url("assets/images/hero-bg.jpg") center/cover no-repeat;
     display: flex;
@@ -89,12 +85,12 @@ body {
 .hero-content {
     position: relative;
     z-index: 2;
-    max-width: 750px;
+    max-width: 800px;
     padding: 20px;
 }
 
 .hero-content h1 {
-    font-size: 60px;
+    font-size: 58px;
     margin-bottom: 20px;
 }
 
@@ -104,8 +100,9 @@ body {
 }
 
 .tagline {
-    margin-bottom: 30px;
-    opacity: 0.9;
+    margin-bottom: 35px;
+    font-size: 18px;
+    opacity: 0.85;
 }
 
 .cta-button {
@@ -123,11 +120,81 @@ body {
 }
 
 /* ========================================
+   FEATURES SECTION
+======================================== */
+
+#features {
+    padding: 120px 20px;
+    background: #0f172a;
+}
+
+#features .about-content {
+    max-width: 1100px;
+    margin: auto;
+    display: flex;
+    justify-content: space-between;
+    gap: 60px;
+    flex-wrap: wrap;
+}
+
+#features .about-text {
+    flex: 1;
+    min-width: 280px;
+}
+
+/* ========================================
+   ABOUT SECTION
+======================================== */
+
+#about {
+    padding: 120px 20px;
+    background: #0b1120;
+}
+
+.about-content {
+    max-width: 1100px;
+    margin: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 60px;
+    flex-wrap: wrap;
+}
+
+.about-image {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+}
+
+.profile-photo {
+    width: 320px;
+    max-width: 100%;
+    border-radius: 25px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+}
+
+.about-text {
+    flex: 1;
+    max-width: 520px;
+}
+
+.about-text h2 {
+    font-size: 36px;
+    margin-bottom: 20px;
+}
+
+.about-text p {
+    margin-bottom: 18px;
+    line-height: 1.7;
+    opacity: 0.9;
+}
+
+/* ========================================
    MODE SELECTION SCREEN
 ======================================== */
 
 #join-screen {
-    position: relative;
     margin-top: 80px;
     min-height: calc(100vh - 80px);
     background: linear-gradient(135deg, #020617, #0b1120);
@@ -136,7 +203,6 @@ body {
     justify-content: center;
     align-items: center;
     gap: 25px;
-    z-index: 10;
 }
 
 .mode-btn {
@@ -165,17 +231,15 @@ body {
 
 #main-app {
     margin-top: 80px;
-    height: calc(100vh - 80px);
+    min-height: calc(100vh - 80px);
 }
 
 #app-container {
     display: flex;
-    height: 100%;
+    height: calc(100vh - 80px);
 }
 
-/* ========================================
-   SIDEBAR
-======================================== */
+/* SIDEBAR */
 
 #sidebar {
     width: 260px;
@@ -190,9 +254,7 @@ body {
     font-size: 14px;
 }
 
-/* ========================================
-   MAIN CONTENT
-======================================== */
+/* MAIN CONTENT */
 
 #main-content {
     flex: 1;
@@ -201,9 +263,7 @@ body {
     position: relative;
 }
 
-/* ========================================
-   VIDEO GRID (ZOOM STYLE)
-======================================== */
+/* VIDEO GRID */
 
 #video-grid {
     flex: 1;
@@ -239,9 +299,7 @@ body {
     font-size: 13px;
 }
 
-/* ========================================
-   CHAT SECTION
-======================================== */
+/* CHAT */
 
 #chat-section {
     height: 40%;
@@ -278,9 +336,7 @@ body {
     background: #1f2937;
 }
 
-/* ========================================
-   CHAT INPUT
-======================================== */
+/* CHAT INPUT */
 
 #message-form {
     display: flex;
@@ -306,9 +362,7 @@ body {
     cursor: pointer;
 }
 
-/* ========================================
-   ZOOM CONTROL BAR
-======================================== */
+/* CONTROLS */
 
 .floating-controls {
     position: fixed;
@@ -346,9 +400,7 @@ body {
     background: #dc2626 !important;
 }
 
-/* ========================================
-   MODE VALIDATION
-======================================== */
+/* MODE VALIDATION */
 
 .video-only #chat-section,
 .video-only #sidebar {
@@ -362,81 +414,20 @@ body {
 }
 
 .text-only #chat-section {
-    height: 100% !important;
+    height: calc(100vh - 80px) !important;
 }
 
-/* ========================================
-   RESPONSIVE
-======================================== */
+/* RESPONSIVE */
 
-@media (max-width: 768px) {
-    #app-container {
+@media (max-width: 900px) {
+
+    .hero-content h1 {
+        font-size: 42px;
+    }
+
+    .about-content,
+    #features .about-content {
         flex-direction: column;
-    }
-
-    #sidebar {
-        width: 100%;
-        height: 120px;
-    }
-
-    #chat-section {
-        height: 50%;
-    }
-
-    .floating-controls {
-        bottom: 15px;
+        text-align: center;
     }
 }
-/* ========================================
-   ABOUT SECTION FIXED ALIGNMENT
-======================================== */
-
-.about-section {
-    background: #0f172a;
-    padding: 120px 20px;
-}
-
-.about-wrapper {
-    max-width: 1100px;
-    margin: auto;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 60px;
-    flex-wrap: wrap;
-}
-
-.about-image {
-    flex: 1;
-    display: flex;
-    justify-content: center;
-}
-
-.profile-photo {
-    width: 320px;
-    max-width: 100%;
-    border-radius: 25px;
-    box-shadow: 0 20px 50px rgba(0,0,0,0.6);
-}
-
-.about-text {
-    flex: 1;
-    max-width: 500px;
-}
-
-.about-text h2 {
-    font-size: 34px;
-    margin-bottom: 20px;
-}
-
-.about-text p {
-    margin-bottom: 18px;
-    line-height: 1.7;
-    opacity: 0.9;
-}
-
-.about-highlight {
-    font-weight: 600;
-    color: #38bdf8;
-}
-
