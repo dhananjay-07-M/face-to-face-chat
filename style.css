@@ -12,7 +12,6 @@ html {
     scroll-behavior: smooth;
 }
 
-
 body {
     font-family: 'Poppins', sans-serif;
     background: #0b1120;
@@ -21,7 +20,7 @@ body {
 }
 
 /* ========================================
-   NAVBAR (Glass Effect)
+   NAVBAR
 ======================================== */
 
 .navbar {
@@ -29,7 +28,7 @@ body {
     width: 100%;
     top: 0;
     left: 0;
-    background: rgba(2, 6, 23, 0.85);
+    background: rgba(2, 6, 23, 0.9);
     backdrop-filter: blur(12px);
     padding: 15px 40px;
     display: flex;
@@ -42,23 +41,16 @@ body {
 .nav-brand {
     font-size: 22px;
     font-weight: 700;
-    letter-spacing: 1px;
 }
 
 .nav-links a,
 .nav-links button {
     color: #fff;
-    text-decoration: none;
     margin-left: 20px;
     background: none;
     border: none;
     cursor: pointer;
-    font-weight: 500;
-    transition: 0.3s;
-}
-
-.nav-links a:hover {
-    color: #38bdf8;
+    text-decoration: none;
 }
 
 .cta-nav {
@@ -68,96 +60,7 @@ body {
 }
 
 /* ========================================
-   HERO SECTION (Landing Page)
-======================================== */
-
-#hero-section {
-    height: 100vh;
-    background: url("/assets/images/hero-bg.jpg") center/cover no-repeat;
-    position: relative;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-}
-
-#hero-section .overlay {
-    position: absolute;
-    inset: 0;
-    background: rgba(0,0,0,0.65);
-}
-
-.hero-content {
-    position: relative;
-    z-index: 2;
-    max-width: 700px;
-}
-
-.hero-content h1 {
-    font-size: 56px;
-    font-weight: 700;
-    margin-bottom: 15px;
-}
-
-.hero-content h2 {
-    font-weight: 400;
-    margin-bottom: 15px;
-}
-
-.tagline {
-    font-size: 18px;
-    opacity: 0.85;
-    margin-bottom: 30px;
-}
-
-.cta-button {
-    background: linear-gradient(45deg, #2563eb, #38bdf8);
-    padding: 14px 30px;
-    border-radius: 10px;
-    text-decoration: none;
-    color: white;
-    font-weight: 600;
-    transition: 0.3s;
-}
-
-.cta-button:hover {
-    transform: scale(1.08);
-}
-
-/* ========================================
-   ABOUT SECTION
-======================================== */
-
-.content-section {
-    padding: 100px 20px;
-    background: #0f172a;
-}
-
-.about-content {
-    max-width: 1100px;
-    margin: auto;
-    display: flex;
-    gap: 40px;
-    align-items: center;
-    flex-wrap: wrap;
-}
-
-.profile-photo {
-    width: 260px;
-    border-radius: 20px;
-    box-shadow: 0 15px 40px rgba(0,0,0,0.6);
-}
-
-/* ========================================
-   DASHBOARD BACKGROUND
-======================================== */
-
-.dashboard-body {
-    background: url("/assets/images/dashboard-bg.jpg") center/cover no-repeat fixed;
-}
-
-/* ========================================
-   MODE SELECTION SCREEN
+   MODE SELECTION
 ======================================== */
 
 #join-screen {
@@ -169,12 +72,6 @@ body {
     justify-content: center;
     align-items: center;
     gap: 25px;
-    text-align: center;
-}
-
-#join-screen h2 {
-    font-size: 28px;
-    font-weight: 600;
 }
 
 .mode-btn {
@@ -191,11 +88,10 @@ body {
 
 .mode-btn:hover {
     transform: scale(1.07);
-    box-shadow: 0 0 20px rgba(37, 99, 235, 0.6);
 }
 
 /* ========================================
-   MAIN APP LAYOUT
+   MAIN APP
 ======================================== */
 
 #main-app {
@@ -207,18 +103,16 @@ body {
     height: calc(100vh - 80px);
 }
 
-/* SIDEBAR */
+/* ========================================
+   SIDEBAR
+======================================== */
 
 #sidebar {
     width: 260px;
-    background: rgba(15, 23, 42, 0.9);
+    background: rgba(15, 23, 42, 0.95);
     backdrop-filter: blur(10px);
     padding: 20px;
     border-right: 1px solid rgba(255,255,255,0.05);
-}
-
-#sidebar h3 {
-    margin-bottom: 15px;
 }
 
 #online-users-list p {
@@ -226,7 +120,9 @@ body {
     font-size: 14px;
 }
 
-/* MAIN CONTENT */
+/* ========================================
+   MAIN CONTENT
+======================================== */
 
 #main-content {
     flex: 1;
@@ -236,24 +132,27 @@ body {
 }
 
 /* ========================================
-   VIDEO GRID
+   VIDEO GRID (Zoom Style)
 ======================================== */
 
 #video-grid {
     flex: 1;
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-    gap: 15px;
-    padding: 20px;
-    background: rgba(0,0,0,0.75);
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 20px;
+    padding: 30px;
+    background: #000;
+    align-items: center;
 }
 
 .video-wrapper {
-    border-radius: 18px;
-    overflow: hidden;
     position: relative;
+    width: 100%;
+    aspect-ratio: 16/9;
+    border-radius: 20px;
+    overflow: hidden;
     background: black;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.6);
 }
 
 .video-wrapper video {
@@ -267,18 +166,18 @@ body {
     bottom: 10px;
     left: 10px;
     background: rgba(0,0,0,0.6);
-    padding: 5px 12px;
+    padding: 6px 12px;
     border-radius: 8px;
     font-size: 13px;
 }
 
 /* ========================================
-   CHAT SECTION
+   CHAT SECTION (WhatsApp Style)
 ======================================== */
 
 #chat-section {
-    height: 38%;
-    background: rgba(15, 23, 42, 0.95);
+    height: 40%;
+    background: rgba(15, 23, 42, 0.98);
     display: flex;
     flex-direction: column;
     border-top: 1px solid rgba(255,255,255,0.05);
@@ -290,15 +189,12 @@ body {
     overflow-y: auto;
 }
 
-/* Chat Bubbles */
-
 .chat-bubble {
     max-width: 70%;
     padding: 12px 16px;
     border-radius: 16px;
     margin-bottom: 10px;
     font-size: 14px;
-    animation: fadeIn 0.2s ease;
 }
 
 .chat-bubble.mine {
@@ -309,11 +205,6 @@ body {
 
 .chat-bubble.other {
     background: #1f2937;
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(5px); }
-    to { opacity: 1; transform: translateY(0); }
 }
 
 /* ========================================
@@ -332,7 +223,6 @@ body {
     border-radius: 25px;
     border: none;
     outline: none;
-    font-size: 14px;
 }
 
 #message-form button {
@@ -343,44 +233,42 @@ body {
     background: #2563eb;
     color: white;
     cursor: pointer;
-    transition: 0.3s;
-}
-
-#message-form button:hover {
-    background: #1d4ed8;
 }
 
 /* ========================================
-   FLOATING CONTROLS (Zoom Style)
+   ZOOM STYLE CONTROL BAR
 ======================================== */
 
 .floating-controls {
-    position: absolute;
-    bottom: 25px;
+    position: fixed;
+    bottom: 30px;
     left: 50%;
     transform: translateX(-50%);
-    background: rgba(15, 23, 42, 0.9);
-    backdrop-filter: blur(12px);
-    padding: 12px 20px;
-    border-radius: 40px;
+    background: rgba(20, 20, 20, 0.9);
+    backdrop-filter: blur(15px);
+    padding: 14px 30px;
+    border-radius: 50px;
     display: flex;
-    gap: 15px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+    gap: 25px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+    z-index: 999;
 }
 
 .ctrl-btn {
-    width: 48px;
-    height: 48px;
+    width: 55px;
+    height: 55px;
     border-radius: 50%;
     border: none;
-    background: #1f2937;
+    background: #2c2c2c;
     color: white;
+    font-size: 20px;
     cursor: pointer;
-    transition: 0.3s;
+    transition: 0.25s ease;
 }
 
 .ctrl-btn:hover {
     background: #2563eb;
+    transform: scale(1.1);
 }
 
 .end-call {
@@ -392,14 +280,20 @@ body {
 }
 
 /* ========================================
-   FOOTER
+   MODE VALIDATION
 ======================================== */
 
-footer {
-    background: #020617;
-    padding: 15px;
-    text-align: center;
-    font-size: 14px;
+.video-only #chat-section {
+    display: none !important;
+}
+
+.video-only #sidebar {
+    display: none !important;
+}
+
+.text-only #video-grid,
+.text-only .floating-controls {
+    display: none !important;
 }
 
 /* ========================================
@@ -413,14 +307,10 @@ footer {
 
     #sidebar {
         width: 100%;
-        height: 150px;
+        height: 120px;
     }
 
     #chat-section {
-        height: 45%;
-    }
-
-    .floating-controls {
-        bottom: 15px;
+        height: 50%;
     }
 }
