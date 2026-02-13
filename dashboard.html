@@ -8,7 +8,7 @@
     <!-- Google Font -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
 
-    <link rel="stylesheet" href="/style.css">
+    <link rel="stylesheet" href="style.css">
 
     <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/7.14.0/firebase-app.js"></script>
@@ -34,11 +34,11 @@
     <h2>Select Communication Mode</h2>
 
     <button class="mode-btn" onclick="startInstant('text')">
-        💬 Text Group
+        💬 Text Mode
     </button>
 
     <button class="mode-btn" onclick="startInstant('video')">
-        🎥 Video Meeting
+        🎥 Video Mode
     </button>
 
     <button class="mode-btn" onclick="startInstant('both')">
@@ -46,7 +46,7 @@
     </button>
 </div>
 
-<!-- ================= MAIN APP ================= -->
+<!-- ================= MAIN APPLICATION ================= -->
 <div id="main-app" style="display:none;">
 
     <div id="app-container">
@@ -60,39 +60,41 @@
         <!-- ===== MAIN CONTENT ===== -->
         <main id="main-content">
 
-            <!-- ===== VIDEO GRID ===== -->
-            <div id="video-grid">
+            <!-- ===== VIDEO AREA ===== -->
+            <section id="video-grid">
                 <div class="video-wrapper">
                     <video id="local-video" autoplay muted playsinline></video>
                     <div class="name-label">You</div>
                 </div>
-            </div>
+            </section>
 
-            <!-- ===== CHAT SECTION ===== -->
-            <div id="chat-section">
+            <!-- ===== CHAT AREA ===== -->
+            <section id="chat-section">
                 <div id="messages-container"></div>
 
                 <form id="message-form">
                     <input type="file" id="file-input" hidden>
                     <button type="button" id="file-btn">📎</button>
+
                     <input type="text" id="message-input" placeholder="Type a message...">
+
                     <button type="submit">➤</button>
                 </form>
-            </div>
-
-            <!-- ===== CONTROLS ===== -->
-            <div class="floating-controls">
-                <button id="mic-toggle" class="ctrl-btn">🎤</button>
-                <button id="video-toggle" class="ctrl-btn">📷</button>
-                <button id="leave-call" class="ctrl-btn end-call">❌</button>
-            </div>
+            </section>
 
         </main>
-
     </div>
+
+    <!-- ===== FLOATING CONTROLS (Zoom Style) ===== -->
+    <div class="floating-controls">
+        <button id="mic-toggle" class="ctrl-btn">🎤</button>
+        <button id="video-toggle" class="ctrl-btn">📷</button>
+        <button id="leave-call" class="ctrl-btn end-call">❌</button>
+    </div>
+
 </div>
 
-<script src="/script.js"></script>
+<script src="script.js"></script>
 
 </body>
 </html>
