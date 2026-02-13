@@ -1,6 +1,6 @@
 // =====================================================
-// VISIO - FULL ADVANCED PRODUCTION BACKEND
-// Create + Join + Video + Chat + File + Media Sync
+// VISIO - FINAL CLEAN ADVANCED VERSION
+// Direct Mode → Username → Enter Room
 // =====================================================
 
 // ---------------- FIREBASE ----------------
@@ -21,14 +21,13 @@ const database = firebase.database();
 let CURRENT_MODE = "";
 let ROOM_ID = "";
 let ROOM_NAME = "";
-let MAX_USERS = 0;
 let DISPLAY_NAME = "";
+let MAX_USERS = 50;
 let CREATOR_ID = "";
 
 let peer = null;
 let myPeerId = null;
 let localStream = null;
-let currentCamera = "user";
 
 const connections = {};
 const userNames = {};
@@ -40,64 +39,34 @@ function get(id) {
     return document.getElementById(id);
 }
 
-// ---------------- USERNAME ----------------
-function getValidUsername() {
-    const regex = /^[A-Za-z0-9 ]{1,15}$/;
-    while (true) {
-        let name = prompt("Enter your name (max 15 chars):");
-        if (!name) continue;
-        name = name.trim();
-        if (regex.test(name)) return name;
-        alert("Invalid name!");
-    }
-}
+// =====================================================
+// DIRECT MODE START
+// =====================================================
 
-// ---------------- MODE ----------------
-window.selectMode = function(mode) {
+window.startInstant = function(mode) {
+
     CURRENT_MODE = mode;
+
+    if (mode === "text") ROOM_ID = "text-room";
+    if (mode === "video") ROOM_ID = "video-room";
+    if (mode === "both") ROOM_ID = "hybrid-room";
+
+    ROOM_NAME = ROOM_ID;
+
+    DISPLAY_NAME = prompt("Enter your name (max 15 chars):");
+    if (!DISPLAY_NAME) return;
+
     get("join-screen").style.display = "none";
-    get("action-screen").style.display = "flex";
-
-    get("mode-title").innerText =
-        mode === "text" ? "TEXT CHAT ROOM" :
-        mode === "video" ? "VIDEO CALL ROOM" :
-        "VIDEO + TEXT ROOM";
-};
-
-// ---------------- CREATE ROOM ----------------
-window.createRoom = function() {
-    ROOM_NAME = get("room-name").value.trim();
-    ROOM_ID = get("room-id").value.trim();
-    MAX_USERS = parseInt(get("max-users").value);
-
-    if (!ROOM_NAME || ROOM_NAME.length < 3)
-        return alert("Room name too short");
-
-    if (!ROOM_ID || !/^[A-Za-z0-9]+$/.test(ROOM_ID))
-        return alert("Room ID only letters & numbers");
-
-    if (!MAX_USERS || MAX_USERS < 2 || MAX_USERS > 20)
-        return alert("Max users must be 2-20");
-
-    startRoom(true);
-};
-
-// ---------------- JOIN ROOM ----------------
-window.joinRoom = function() {
-    ROOM_ID = get("join-room-id").value.trim();
-
-    if (!ROOM_ID || !/^[A-Za-z0-9]+$/.test(ROOM_ID))
-        return alert("Invalid Room ID");
-
-    startRoom(false);
-};
-
-// ---------------- START ROOM ----------------
-async function startRoom(isCreator) {
-
-    DISPLAY_NAME = getValidUsername();
-    get("action-screen").style.display = "none";
     get("main-app").style.display = "block";
+
+    startRoom();
+};
+
+// =====================================================
+// START ROOM
+// =====================================================
+
+async function startRoom() {
 
     myPeerId = "visio_" + Math.random().toString(36).substr(2, 9);
 
@@ -113,33 +82,7 @@ async function startRoom(isCreator) {
 
         roomRef.once("value", snap => {
 
-            if (snap.exists()) {
-
-                const data = snap.val();
-
-                if (data.mode !== CURRENT_MODE) {
-                    alert("Room mode mismatch!");
-                    location.reload();
-                    return;
-                }
-
-                if (Object.keys(data.users || {}).length >= data.maxUsers) {
-                    alert("Room Full!");
-                    location.reload();
-                    return;
-                }
-
-                CREATOR_ID = data.creator;
-                ROOM_NAME = data.roomName;
-                MAX_USERS = data.maxUsers;
-
-            } else {
-
-                if (!isCreator) {
-                    alert("Room not found!");
-                    location.reload();
-                    return;
-                }
+            if (!snap.exists()) {
 
                 CREATOR_ID = id;
 
@@ -150,6 +93,9 @@ async function startRoom(isCreator) {
                     maxUsers: MAX_USERS,
                     creator: id
                 });
+            } else {
+                const data = snap.val();
+                CREATOR_ID = data.creator;
             }
 
             roomRef.child("users/" + id).set({
@@ -197,19 +143,24 @@ async function startRoom(isCreator) {
     peer.on("connection", setupDataConnection);
 }
 
-// ---------------- ROOM HEADER ----------------
+// =====================================================
+// ROOM HEADER
+// =====================================================
+
 function setupRoomHeader() {
     const bar = document.createElement("div");
     bar.className = "room-info-bar";
     bar.innerHTML = `
         <span>Room: ${ROOM_NAME}</span>
-        <span>ID: ${ROOM_ID}</span>
         <span>${myPeerId === CREATOR_ID ? "👑 Creator" : "Member"}</span>
     `;
     document.body.insertBefore(bar, get("app-container"));
 }
 
-// ---------------- VIDEO ----------------
+// =====================================================
+// VIDEO
+// =====================================================
+
 function addVideoStream(peerId, stream) {
     if (get("wrap-" + peerId)) return;
 
@@ -226,8 +177,12 @@ function addVideoStream(peerId, stream) {
     get("video-grid").appendChild(wrapper);
 }
 
-// ---------------- CHAT ----------------
+// =====================================================
+// CHAT
+// =====================================================
+
 function displayMessage(user, text, mine) {
+
     const div = document.createElement("div");
     div.className = mine ? "chat-bubble mine" : "chat-bubble other";
 
@@ -247,7 +202,27 @@ function displayMessage(user, text, mine) {
         get("messages-container").scrollHeight;
 }
 
-// ---------------- FILE & IMAGE ----------------
+get("message-form")?.addEventListener("submit", e => {
+
+    e.preventDefault();
+
+    if (CURRENT_MODE === "video") return;
+
+    const input = get("message-input");
+    const msg = input.value.trim();
+    if (!msg) return;
+
+    displayMessage(DISPLAY_NAME, msg, true);
+
+    broadcast({ type: "chat", user: DISPLAY_NAME, text: msg });
+
+    input.value = "";
+});
+
+// =====================================================
+// FILE SYSTEM
+// =====================================================
+
 get("file-btn")?.addEventListener("click", () => {
     get("file-input").click();
 });
@@ -259,7 +234,7 @@ get("file-input")?.addEventListener("change", e => {
     if (file.type.startsWith("image/")) {
         const reader = new FileReader();
         reader.onload = ev => {
-            broadcast({ type: "image", user: DISPLAY_NAME, data: ev.target.result });
+            broadcast({ type: "image", user: DISPLAY_NAME, text: ev.target.result });
             displayMessage(DISPLAY_NAME, "[Image]", true);
         };
         reader.readAsDataURL(file);
@@ -268,7 +243,10 @@ get("file-input")?.addEventListener("change", e => {
     }
 });
 
-// ---------------- FILE CHUNK SYSTEM ----------------
+// =====================================================
+// FILE CHUNK SYSTEM
+// =====================================================
+
 function sendFile(file) {
 
     broadcast({
@@ -301,7 +279,10 @@ function sendFile(file) {
     readNext();
 }
 
-// ---------------- DATA CONNECTION ----------------
+// =====================================================
+// DATA CONNECTION
+// =====================================================
+
 function setupDataConnection(conn) {
 
     conn.on("data", data => {
@@ -330,33 +311,40 @@ function setupDataConnection(conn) {
                 get("messages-container").appendChild(a);
             }
         }
-
-        if (data.type === "media_status")
-            updateMediaStatus(data.peerId, data.mic, data.cam);
     });
 }
 
-// ---------------- MEDIA STATUS ----------------
-function broadcastStatus() {
-    const mic = localStream.getAudioTracks()[0].enabled;
-    const cam = localStream.getVideoTracks()[0].enabled;
-    broadcast({ type: "media_status", peerId: myPeerId, mic, cam });
+// =====================================================
+// PEER CONNECTIONS
+// =====================================================
+
+function callPeer(id) {
+    const call = peer.call(id, localStream);
+    connections[id] = { media: call };
+
+    call.on("stream", stream => addVideoStream(id, stream));
 }
 
-function updateMediaStatus(peerId, mic, cam) {
-    const status = get("status-" + peerId);
-    if (!status) return;
-    status.innerHTML = `${!mic ? "🎤❌" : ""} ${!cam ? "📷❌" : ""}`;
+function connectToPeer(id) {
+    const conn = peer.connect(id, { reliable: true });
+    connections[id] = { data: conn };
+    setupDataConnection(conn);
 }
 
-// ---------------- BROADCAST ----------------
+// =====================================================
+// BROADCAST
+// =====================================================
+
 function broadcast(data) {
     Object.values(connections).forEach(c =>
         c.data?.send(data)
     );
 }
 
-// ---------------- ONLINE USERS ----------------
+// =====================================================
+// ONLINE USERS
+// =====================================================
+
 function addOnlineUser(id, name) {
     const p = document.createElement("p");
     p.id = "user-" + id;
@@ -368,7 +356,10 @@ function removeOnlineUser(id) {
     get("user-" + id)?.remove();
 }
 
-// ---------------- EXIT ----------------
+// =====================================================
+// EXIT
+// =====================================================
+
 get("leave-call")?.addEventListener("click", () => {
     peer?.destroy();
     location.reload();
