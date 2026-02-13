@@ -1,94 +1,168 @@
+/* ========================================
+   VISIO - PROFESSIONAL UI DESIGN
+======================================== */
+
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: Arial, sans-serif;
 }
 
 body {
+    font-family: 'Poppins', sans-serif;
     background: #0b1120;
-    color: white;
+    color: #fff;
+    overflow-x: hidden;
 }
 
-/* ================= NAVBAR ================= */
+/* ========================================
+   NAVBAR
+======================================== */
 
 .navbar {
+    position: fixed;
+    width: 100%;
+    top: 0;
+    left: 0;
+    background: rgba(2, 6, 23, 0.9);
+    backdrop-filter: blur(10px);
+    padding: 15px 40px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 15px 30px;
-    background: #020617;
+    z-index: 1000;
 }
 
-.nav-links a, .nav-links button {
-    color: white;
+.nav-brand {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: 1px;
+}
+
+.nav-links a,
+.nav-links button {
+    color: #fff;
     text-decoration: none;
-    margin-left: 15px;
+    margin-left: 20px;
     background: none;
     border: none;
     cursor: pointer;
+    font-weight: 500;
+    transition: 0.3s;
+}
+
+.nav-links a:hover {
+    color: #38bdf8;
 }
 
 .cta-nav {
-    background: #2563eb;
-    padding: 6px 12px;
-    border-radius: 6px;
+    background: linear-gradient(45deg, #2563eb, #38bdf8);
+    padding: 8px 14px;
+    border-radius: 8px;
 }
 
-/* ================= HERO SECTION ================= */
+/* ========================================
+   HERO SECTION (INDEX)
+======================================== */
 
 #hero-section {
     height: 100vh;
     background: url("/assets/images/hero-bg.jpg") center/cover no-repeat;
     position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
 }
 
 #hero-section .overlay {
     position: absolute;
     inset: 0;
-    background: rgba(0,0,0,0.6);
+    background: rgba(0,0,0,0.65);
 }
 
 .hero-content {
     position: relative;
     z-index: 2;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    gap: 15px;
+    max-width: 700px;
+}
+
+.hero-content h1 {
+    font-size: 52px;
+    font-weight: 700;
+    margin-bottom: 15px;
+}
+
+.hero-content h2 {
+    font-weight: 400;
+    margin-bottom: 15px;
+}
+
+.tagline {
+    font-size: 18px;
+    opacity: 0.85;
+    margin-bottom: 30px;
 }
 
 .cta-button {
-    background: #2563eb;
-    padding: 12px 20px;
-    border-radius: 8px;
+    background: linear-gradient(45deg, #2563eb, #38bdf8);
+    padding: 14px 28px;
+    border-radius: 10px;
     text-decoration: none;
     color: white;
+    font-weight: 600;
+    transition: 0.3s;
 }
 
-/* ================= ABOUT ================= */
+.cta-button:hover {
+    transform: scale(1.05);
+}
+
+/* ========================================
+   ABOUT SECTION
+======================================== */
 
 .content-section {
-    padding: 60px 20px;
-    max-width: 1100px;
-    margin: auto;
+    padding: 100px 20px;
+    background: #0f172a;
 }
 
 .about-content {
+    max-width: 1100px;
+    margin: auto;
     display: flex;
-    gap: 30px;
+    gap: 40px;
+    align-items: center;
     flex-wrap: wrap;
 }
 
-.profile-photo {
-    width: 220px;
-    border-radius: 12px;
-    box-shadow: 0 0 20px rgba(0,0,0,0.5);
+.about-text {
+    flex: 1;
+    line-height: 1.8;
+    font-size: 16px;
 }
 
-/* ================= JOIN SCREEN ================= */
+.profile-photo {
+    width: 240px;
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+}
+
+/* ========================================
+   DASHBOARD BACKGROUND
+======================================== */
+
+.dashboard-body {
+    background: url("/assets/images/dashboard-bg.jpg") center/cover no-repeat fixed;
+}
+
+#main-app {
+    margin-top: 80px;
+}
+
+/* ========================================
+   MODE / JOIN SCREENS
+======================================== */
 
 #join-screen,
 #action-screen {
@@ -99,51 +173,93 @@ body {
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    gap: 15px;
+    gap: 20px;
+    text-align: center;
 }
 
-.mode-btn {
-    background: #2563eb;
-    padding: 12px 25px;
+.mode-btn,
+.room-btn {
+    background: linear-gradient(45deg, #2563eb, #38bdf8);
+    padding: 12px 30px;
     border: none;
-    border-radius: 8px;
+    border-radius: 10px;
     color: white;
+    font-size: 16px;
     cursor: pointer;
+    transition: 0.3s;
 }
 
-/* ================= MAIN APP ================= */
+.mode-btn:hover,
+.room-btn:hover {
+    transform: scale(1.05);
+}
+
+/* ========================================
+   APP LAYOUT
+======================================== */
 
 #app-container {
     display: flex;
-    height: calc(100vh - 60px);
+    height: calc(100vh - 80px);
 }
+
+#sidebar {
+    width: 250px;
+    background: rgba(15, 23, 42, 0.9);
+    backdrop-filter: blur(8px);
+    padding: 15px;
+    overflow-y: auto;
+}
+
+#main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+/* ========================================
+   VIDEO GRID
+======================================== */
 
 #video-grid {
     flex: 1;
-    background: black;
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 10px;
-    padding: 15px;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 15px;
+    padding: 20px;
+    background: rgba(0,0,0,0.7);
 }
 
 .video-wrapper {
-    background: black;
-    border-radius: 10px;
+    border-radius: 15px;
     overflow: hidden;
+    position: relative;
+    background: black;
 }
 
-video {
+.video-wrapper video {
     width: 100%;
     height: 100%;
     object-fit: cover;
 }
 
-/* ================= CHAT ================= */
+.name-label {
+    position: absolute;
+    bottom: 8px;
+    left: 8px;
+    background: rgba(0,0,0,0.6);
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 13px;
+}
+
+/* ========================================
+   CHAT SECTION
+======================================== */
 
 #chat-section {
-    width: 350px;
-    background: #0f172a;
+    height: 40%;
+    background: rgba(15, 23, 42, 0.95);
     display: flex;
     flex-direction: column;
 }
@@ -154,22 +270,91 @@ video {
     overflow-y: auto;
 }
 
+.chat-bubble {
+    max-width: 70%;
+    padding: 10px 14px;
+    border-radius: 12px;
+    margin-bottom: 10px;
+}
+
+.chat-bubble.mine {
+    background: #25d366;
+    color: black;
+    align-self: flex-end;
+}
+
+.chat-bubble.other {
+    background: #1f2937;
+}
+
+/* ========================================
+   CHAT INPUT
+======================================== */
+
 #message-form {
     display: flex;
-    padding: 10px;
+    padding: 12px;
+    background: #111827;
 }
 
 #message-input {
     flex: 1;
-    padding: 8px;
-    border-radius: 5px;
+    padding: 10px;
+    border-radius: 20px;
     border: none;
+    outline: none;
 }
 
-/* ================= FOOTER ================= */
+#message-form button {
+    margin-left: 10px;
+    border: none;
+    border-radius: 50%;
+    padding: 10px;
+    background: #2563eb;
+    color: white;
+    cursor: pointer;
+}
+
+/* ========================================
+   FLOATING CONTROLS
+======================================== */
+
+.floating-controls,
+.zoom-controls {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 15px;
+}
+
+.ctrl-btn {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    border: none;
+    background: #1f2937;
+    color: white;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.ctrl-btn:hover {
+    background: #2563eb;
+}
+
+.end-call {
+    background: #dc2626 !important;
+}
+
+/* ========================================
+   FOOTER
+======================================== */
 
 footer {
-    text-align: center;
-    padding: 15px;
     background: #020617;
+    padding: 15px;
+    text-align: center;
+    font-size: 14px;
 }
