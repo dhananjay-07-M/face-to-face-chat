@@ -1,11 +1,18 @@
 {
-  "name": "face-to-face-chat",
+  "name": "visio-connect",
   "version": "1.0.0",
+  "description": "VISIO - Real-time WhatsApp style chat and Zoom style video meeting app built with WebRTC, Firebase & PeerJS.",
   "private": true,
+  "author": "Dhananjay M",
+  "license": "MIT",
+
   "scripts": {
-    "start": "npx serve .",
-    "build": "echo 'Static site ready'"
+    "dev": "npx serve . -l 3000",
+    "start": "npm run dev",
+    "build": "echo \"Static build ready\"",
+    "preview": "npx serve . -l 5000"
   },
+
   "dependencies": {
     "serve": "^14.2.0"
   }
