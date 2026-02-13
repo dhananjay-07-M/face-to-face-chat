@@ -2,139 +2,63 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>VISIO | Real-Time Communication</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Google Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="/style.css">
 </head>
+<body>
 
-<body class="landing-body">
-
-<!-- NAVBAR -->
-<nav class="navbar modern-nav">
-    <div class="nav-left">
-        <i class="fas fa-comments app-logo"></i>
-        <span class="nav-brand">VISIO</span>
-    </div>
-
+<nav class="navbar">
+    <div class="nav-brand">VISIO</div>
     <div class="nav-links">
         <a href="#about">About</a>
         <a href="dashboard.html" class="cta-nav">Launch App 🚀</a>
-        <button id="theme-toggle" class="control-btn">🌙</button>
     </div>
 </nav>
 
-<!-- HERO SECTION -->
-<header class="hero-section">
+<header id="hero-section">
+    <div class="overlay"></div>
 
     <div class="hero-content">
         <h1>VISIO</h1>
         <h2>Bridging the Digital Distance</h2>
-
         <p class="tagline">
             “Technology is best when it brings people together.”
         </p>
-
-        <div class="hero-buttons">
-            <a href="dashboard.html" class="primary-btn">
-                <i class="fas fa-video"></i> Start Video Meeting
-            </a>
-
-            <a href="dashboard.html" class="secondary-btn">
-                <i class="fab fa-whatsapp"></i> Start Group Chat
-            </a>
-        </div>
+        <a href="dashboard.html" class="cta-button">
+            Launch Face to Face Chat
+        </a>
     </div>
-
-    <div class="hero-animation">
-        <div class="floating-card whatsapp-preview">
-            <p>💬 Hey! Welcome to VISIO</p>
-        </div>
-
-        <div class="floating-card zoom-preview">
-            <p>📹 Meeting Started...</p>
-        </div>
-    </div>
-
 </header>
 
-<!-- FEATURES SECTION -->
-<section class="features-section">
-    <h2>Powerful Communication Features</h2>
-
-    <div class="features-grid">
-
-        <div class="feature-card">
-            <i class="fas fa-video"></i>
-            <h3>HD Video Meetings</h3>
-            <p>Crystal-clear WebRTC based real-time video communication.</p>
-        </div>
-
-        <div class="feature-card">
-            <i class="fas fa-comments"></i>
-            <h3>WhatsApp Style Group Chat</h3>
-            <p>Real-time messaging powered by Firebase database.</p>
-        </div>
-
-        <div class="feature-card">
-            <i class="fas fa-lock"></i>
-            <h3>Secure & Fast</h3>
-            <p>Peer-to-peer encrypted communication with minimal latency.</p>
-        </div>
-
-    </div>
-</section>
-
-<!-- ABOUT SECTION -->
-<section id="about" class="about-section">
-    <div class="about-container">
-
+<section id="about" class="content-section">
+    <div class="about-content">
         <div class="about-text">
             <h2>Who Built VISIO?</h2>
-
             <p>
                 Hello, I'm <strong>Dhananjay M</strong> 👋  
                 A Computer Science Engineering student passionate about building
-                powerful, modern communication systems.
+                real-time communication systems.
             </p>
-
             <p>
-                Built using <strong>WebRTC</strong> 🚀 and 
-                <strong>Firebase</strong> ⚡ — VISIO proves that 
-                free open technologies can create real-world impact.
-            </p>
-
-            <p class="vision-text">
-                This is not just chat.  
-                This is digital presence.
+                Built using <strong>WebRTC</strong> and <strong>Firebase</strong>,
+                VISIO delivers secure and seamless digital presence.
             </p>
         </div>
 
-        <div class="about-photo">
-            <img src="1.png" alt="Dhananjay M" class="profile-photo">
+        <div>
+            <img src="/assets/images/1.png" alt="Dhananjay M" class="profile-photo">
         </div>
-
     </div>
 </section>
 
-<!-- FOOTER -->
-<footer class="modern-footer">
-    <p id="visitor-count">Visitors: 0</p>
-    <p>© 2026 Dhananjay M | Built with ❤️ using WebRTC & Firebase</p>
+<footer>
+    <p>© 2026 Dhananjay M | Built with WebRTC & Firebase</p>
 </footer>
-
-<script>
-const themeBtn = document.getElementById("theme-toggle");
-
-if (themeBtn) {
-    themeBtn.onclick = () => {
-        document.body.classList.toggle("light");
-        themeBtn.textContent =
-            document.body.classList.contains("light") ? "☀️" : "🌙";
-    };
-}
-</script>
 
 </body>
 </html>
