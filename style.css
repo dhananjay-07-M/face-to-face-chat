@@ -1,5 +1,5 @@
 /* ========================================
-   VISIO - FINAL PRODUCTION UI
+   VISIO - FINAL STABLE PRODUCTION UI
 ======================================== */
 
 * {
@@ -28,9 +28,10 @@ body {
     width: 100%;
     top: 0;
     left: 0;
+    height: 80px;
     background: rgba(2, 6, 23, 0.92);
     backdrop-filter: blur(12px);
-    padding: 15px 40px;
+    padding: 0 40px;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -121,27 +122,34 @@ body {
 }
 
 /* ========================================
-   CONTENT SECTIONS
+   MODE SELECTION SCREEN (FIXED)
 ======================================== */
 
-.content-section {
-    padding: 100px 20px;
-    background: #0f172a;
-}
-
-.about-content {
-    max-width: 1100px;
-    margin: auto;
+#join-screen {
+    margin-top: 80px;
+    min-height: calc(100vh - 80px);
+    background: linear-gradient(135deg, #020617, #0b1120);
     display: flex;
-    gap: 40px;
+    flex-direction: column;
+    justify-content: center;
     align-items: center;
-    flex-wrap: wrap;
+    gap: 25px;
 }
 
-.profile-photo {
-    width: 260px;
-    border-radius: 20px;
-    box-shadow: 0 15px 40px rgba(0,0,0,0.6);
+.mode-btn {
+    width: 240px;
+    padding: 14px;
+    border: none;
+    border-radius: 12px;
+    background: linear-gradient(45deg, #2563eb, #38bdf8);
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.mode-btn:hover {
+    transform: scale(1.07);
 }
 
 /* ========================================
@@ -154,15 +162,17 @@ body {
 
 #main-app {
     margin-top: 80px;
-    height: calc(100vh - 80px);
+    min-height: calc(100vh - 80px);
 }
 
 #app-container {
     display: flex;
-    height: 100%;
+    height: calc(100vh - 80px);
 }
 
-/* SIDEBAR */
+/* ========================================
+   SIDEBAR
+======================================== */
 
 #sidebar {
     width: 260px;
@@ -177,7 +187,9 @@ body {
     font-size: 14px;
 }
 
-/* MAIN CONTENT */
+/* ========================================
+   MAIN CONTENT
+======================================== */
 
 #main-content {
     flex: 1;
@@ -200,6 +212,7 @@ body {
 }
 
 .video-wrapper {
+    position: relative;
     aspect-ratio: 16/9;
     border-radius: 20px;
     overflow: hidden;
@@ -229,7 +242,7 @@ body {
 
 #chat-section {
     height: 40%;
-    min-height: 250px;
+    min-height: 260px;
     background: rgba(15, 23, 42, 0.98);
     display: flex;
     flex-direction: column;
@@ -240,6 +253,8 @@ body {
     flex: 1;
     padding: 15px;
     overflow-y: auto;
+    display: flex;
+    flex-direction: column;
 }
 
 .chat-bubble {
@@ -253,14 +268,16 @@ body {
 .chat-bubble.mine {
     background: #25d366;
     color: black;
-    margin-left: auto;
+    align-self: flex-end;
 }
 
 .chat-bubble.other {
     background: #1f2937;
 }
 
-/* CHAT INPUT */
+/* ========================================
+   CHAT INPUT
+======================================== */
 
 #message-form {
     display: flex;
@@ -342,11 +359,7 @@ body {
 }
 
 .text-only #chat-section {
-    height: 100% !important;
-}
-
-.text-only #app-container {
-    height: calc(100vh - 80px);
+    height: calc(100vh - 80px) !important;
 }
 
 /* ========================================
