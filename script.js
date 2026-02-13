@@ -1,8 +1,10 @@
 // =====================================================
-// VISIO - FINAL STABLE PRODUCTION VERSION
+// VISIO - ENTERPRISE STABLE VERSION
+// Text | Video | Hybrid | Online Users | Clean Sync
 // =====================================================
 
-// ---------------- FIREBASE ----------------
+// ================= FIREBASE =================
+
 const firebaseConfig = {
     apiKey: "AIzaSyDkrzN0604XsYRipUbPF9iiLXy8aaOji3o",
     authDomain: "dhananjay-chat-app.firebaseapp.com",
@@ -16,10 +18,10 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const database = firebase.database();
 
-// ---------------- GLOBAL ----------------
+// ================= GLOBAL STATE =================
+
 let CURRENT_MODE = "";
 let ROOM_ID = "";
-let ROOM_NAME = "";
 let DISPLAY_NAME = "";
 
 let peer = null;
@@ -27,12 +29,12 @@ let myPeerId = null;
 let localStream = null;
 
 const connections = {};
-const userNames = {};
+const userCache = {};
 
 function get(id){ return document.getElementById(id); }
 
 // =====================================================
-// DIRECT START
+// MODE START
 // =====================================================
 
 window.startInstant = function(mode){
@@ -43,8 +45,6 @@ window.startInstant = function(mode){
     if(mode==="video") ROOM_ID="video-room";
     if(mode==="both") ROOM_ID="hybrid-room";
 
-    ROOM_NAME = ROOM_ID;
-
     DISPLAY_NAME = prompt("Enter your name (max 15 chars):");
     if(!DISPLAY_NAME) return;
 
@@ -53,11 +53,11 @@ window.startInstant = function(mode){
     get("join-screen").style.display="none";
     get("main-app").style.display="block";
 
-    startRoom();
+    initializeRoom();
 };
 
 // =====================================================
-// MODE VALIDATION
+// MODE UI CONTROL
 // =====================================================
 
 function applyModeUI(){
@@ -72,56 +72,99 @@ function applyModeUI(){
 }
 
 // =====================================================
-// START ROOM
+// INITIALIZE ROOM
 // =====================================================
 
-async function startRoom(){
+async function initializeRoom(){
 
     myPeerId = "visio_"+Math.random().toString(36).substr(2,9);
 
     peer = new Peer(myPeerId);
 
-    const roomRef = database.ref("rooms/"+ROOM_ID);
+    const usersRef = database.ref("rooms/"+ROOM_ID+"/users");
 
     peer.on("open", id=>{
 
-        roomRef.child("users/"+id).set({
+        // Add self
+        usersRef.child(id).set({
             name: DISPLAY_NAME,
-            peerId: id
+            peerId: id,
+            joinedAt: Date.now()
         });
 
-        roomRef.child("users/"+id).onDisconnect().remove();
+        usersRef.child(id).onDisconnect().remove();
 
-        roomRef.child("users").on("child_added", snap=>{
-            const user = snap.val();
-            userNames[user.peerId] = user.name;
-
-            addOnlineUser(user.peerId,user.name);
-
-            if(user.peerId!==id){
-
-                connectToPeer(user.peerId);
-
-                if(CURRENT_MODE!=="text"){
-                    callPeer(user.peerId);
-                }
-            }
-        });
-
-        roomRef.child("users").on("child_removed", snap=>{
-            removeOnlineUser(snap.val().peerId);
-        });
+        listenForUsers(usersRef,id);
     });
 
     if(CURRENT_MODE!=="text"){
+        await initializeMedia();
+    }
 
+    setupPeerEvents();
+}
+
+// =====================================================
+// USER LISTENERS
+// =====================================================
+
+function listenForUsers(usersRef,myId){
+
+    usersRef.on("value", snapshot=>{
+
+        const users = snapshot.val() || {};
+
+        get("online-users-list").innerHTML = "";
+
+        Object.keys(users).forEach(uid=>{
+            const user = users[uid];
+            addOnlineUser(user.peerId,user.name);
+        });
+    });
+
+    usersRef.on("child_added", snap=>{
+        const user = snap.val();
+
+        if(user.peerId===myId) return;
+
+        if(!connections[user.peerId]){
+            connectToPeer(user.peerId);
+
+            if(CURRENT_MODE!=="text"){
+                callPeer(user.peerId);
+            }
+        }
+    });
+
+    usersRef.on("child_removed", snap=>{
+        const user = snap.val();
+        cleanupUser(user.peerId);
+    });
+}
+
+// =====================================================
+// MEDIA
+// =====================================================
+
+async function initializeMedia(){
+    try{
         localStream = await navigator.mediaDevices.getUserMedia({
             video:true,
             audio:true
         });
 
         get("local-video").srcObject = localStream;
+
+    }catch(e){
+        alert("Camera/Mic permission denied");
     }
+}
+
+// =====================================================
+// PEER EVENTS
+// =====================================================
+
+function setupPeerEvents(){
 
     peer.on("call", call=>{
         call.answer(localStream);
@@ -129,19 +172,22 @@ async function startRoom(){
         call.on("stream", stream=>{
             addVideoStream(call.peer,stream);
         });
+
+        connections[call.peer] = connections[call.peer] || {};
+        connections[call.peer].media = call;
     });
 
     peer.on("connection", conn=>{
         conn.on("open",()=>{
             connections[conn.peer] = connections[conn.peer] || {};
             connections[conn.peer].data = conn;
-            setupDataConnection(conn);
+            setupDataChannel(conn);
         });
     });
 }
 
 // =====================================================
-// VIDEO
+// VIDEO SYSTEM
 // =====================================================
 
 function addVideoStream(peerId,stream){
@@ -161,8 +207,12 @@ function addVideoStream(peerId,stream){
     get("video-grid").appendChild(wrapper);
 }
 
+function removeVideo(peerId){
+    get("wrap-"+peerId)?.remove();
+}
+
 // =====================================================
-// CHAT
+// CHAT SYSTEM
 // =====================================================
 
 get("message-form")?.addEventListener("submit",e=>{
@@ -180,7 +230,8 @@ get("message-form")?.addEventListener("submit",e=>{
     broadcast({
         type:"chat",
         user:DISPLAY_NAME,
-        text:msg
+        text:msg,
+        timestamp:Date.now()
     });
 
     input.value="";
@@ -191,7 +242,16 @@ function displayMessage(user,text,mine){
     const div=document.createElement("div");
     div.className=mine?"chat-bubble mine":"chat-bubble other";
 
-    div.innerHTML=`<b>${mine?"You":user}</b><br>${text}`;
+    const time = new Date().toLocaleTimeString([],{
+        hour:"2-digit",
+        minute:"2-digit"
+    });
+
+    div.innerHTML=`
+        <div><b>${mine?"You":user}</b></div>
+        <div>${text}</div>
+        <div style="font-size:11px;opacity:0.7">${time}</div>
+    `;
 
     get("messages-container").appendChild(div);
 
@@ -200,10 +260,10 @@ function displayMessage(user,text,mine){
 }
 
 // =====================================================
-// DATA CONNECTION
+// DATA CHANNEL
 // =====================================================
 
-function setupDataConnection(conn){
+function setupDataChannel(conn){
 
     conn.on("data",data=>{
 
@@ -217,12 +277,12 @@ function connectToPeer(id){
 
     if(connections[id]?.data) return;
 
-    const conn=peer.connect(id,{reliable:true});
+    const conn = peer.connect(id,{reliable:true});
 
     conn.on("open",()=>{
         connections[id] = connections[id] || {};
         connections[id].data = conn;
-        setupDataConnection(conn);
+        setupDataChannel(conn);
     });
 }
 
@@ -230,7 +290,7 @@ function callPeer(id){
 
     if(connections[id]?.media) return;
 
-    const call=peer.call(id,localStream);
+    const call = peer.call(id,localStream);
 
     connections[id] = connections[id] || {};
     connections[id].media = call;
@@ -245,6 +305,7 @@ function callPeer(id){
 // =====================================================
 
 function broadcast(data){
+
     Object.values(connections).forEach(c=>{
         if(c.data && c.data.open){
             c.data.send(data);
@@ -253,18 +314,35 @@ function broadcast(data){
 }
 
 // =====================================================
-// ONLINE USERS
+// USER CLEANUP
+// =====================================================
+
+function cleanupUser(peerId){
+
+    removeOnlineUser(peerId);
+    removeVideo(peerId);
+
+    if(connections[peerId]){
+        connections[peerId].data?.close();
+        connections[peerId].media?.close();
+        delete connections[peerId];
+    }
+}
+
+// =====================================================
+// ONLINE USERS UI
 // =====================================================
 
 function addOnlineUser(id,name){
 
     if(get("user-"+id)) return;
 
-    const p=document.createElement("p");
-    p.id="user-"+id;
-    p.innerText="🟢 "+name;
+    const div=document.createElement("div");
+    div.id="user-"+id;
+    div.style.marginBottom="8px";
+    div.innerText="🟢 "+name;
 
-    get("online-users-list").appendChild(p);
+    get("online-users-list").appendChild(div);
 }
 
 function removeOnlineUser(id){
