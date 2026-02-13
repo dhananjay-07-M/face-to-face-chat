@@ -20,6 +20,7 @@
 
 <body class="dashboard-body">
 
+<!-- ================= NAVBAR ================= -->
 <nav class="navbar">
     <div class="nav-brand">VISIO</div>
     <div class="nav-links">
@@ -28,38 +29,38 @@
     </div>
 </nav>
 
-<!-- MODE SCREEN -->
+<!-- ================= MODE SELECTION ================= -->
 <div id="join-screen">
     <h2>Select Communication Mode</h2>
-    <button class="mode-btn" onclick="selectMode('text')">Text Group</button>
-    <button class="mode-btn" onclick="selectMode('video')">Video Meeting</button>
-    <button class="mode-btn" onclick="selectMode('both')">Video + Text</button>
+
+    <button class="mode-btn" onclick="startInstant('text')">
+        💬 Text Group
+    </button>
+
+    <button class="mode-btn" onclick="startInstant('video')">
+        🎥 Video Meeting
+    </button>
+
+    <button class="mode-btn" onclick="startInstant('both')">
+        🔥 Hybrid Mode
+    </button>
 </div>
 
-<!-- ACTION SCREEN -->
-<div id="action-screen" style="display:none;">
-    <h2 id="mode-title"></h2>
-    <input type="text" id="room-name" placeholder="Room Name">
-    <input type="text" id="room-id" placeholder="Room ID">
-    <input type="number" id="max-users" placeholder="Max Users (2-20)">
-    <button class="room-btn" onclick="createRoom()">Create Room</button>
-
-    <input type="text" id="join-room-id" placeholder="Join Room ID">
-    <button class="room-btn" onclick="joinRoom()">Join Room</button>
-</div>
-
-<!-- MAIN APP -->
+<!-- ================= MAIN APP ================= -->
 <div id="main-app" style="display:none;">
 
     <div id="app-container">
 
+        <!-- ===== SIDEBAR ===== -->
         <aside id="sidebar">
             <h3>Participants</h3>
             <div id="online-users-list"></div>
         </aside>
 
+        <!-- ===== MAIN CONTENT ===== -->
         <main id="main-content">
 
+            <!-- ===== VIDEO GRID ===== -->
             <div id="video-grid">
                 <div class="video-wrapper">
                     <video id="local-video" autoplay muted playsinline></video>
@@ -67,6 +68,7 @@
                 </div>
             </div>
 
+            <!-- ===== CHAT SECTION ===== -->
             <div id="chat-section">
                 <div id="messages-container"></div>
 
@@ -78,6 +80,7 @@
                 </form>
             </div>
 
+            <!-- ===== CONTROLS ===== -->
             <div class="floating-controls">
                 <button id="mic-toggle" class="ctrl-btn">🎤</button>
                 <button id="video-toggle" class="ctrl-btn">📷</button>
@@ -85,8 +88,8 @@
             </div>
 
         </main>
-    </div>
 
+    </div>
 </div>
 
 <script src="/script.js"></script>
