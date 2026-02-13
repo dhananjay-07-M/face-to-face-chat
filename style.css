@@ -1,5 +1,5 @@
 /* ========================================
-   VISIO - FINAL STABLE PRODUCTION UI
+   VISIO - FINAL PRODUCTION STABLE UI
 ======================================== */
 
 * {
@@ -25,16 +25,16 @@ body {
 
 .navbar {
     position: fixed;
-    width: 100%;
     top: 0;
     left: 0;
+    width: 100%;
     height: 80px;
+    padding: 0 40px;
     background: rgba(2, 6, 23, 0.92);
     backdrop-filter: blur(12px);
-    padding: 0 40px;
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    justify-content: space-between;
     z-index: 1000;
     border-bottom: 1px solid rgba(255,255,255,0.05);
 }
@@ -49,8 +49,8 @@ body {
     color: #fff;
     margin-left: 20px;
     text-decoration: none;
-    background: none;
     border: none;
+    background: none;
     cursor: pointer;
     transition: 0.3s;
 }
@@ -70,14 +70,14 @@ body {
 ======================================== */
 
 #hero-section {
+    height: 100vh;
     padding-top: 80px;
-    min-height: 100vh;
     background: url("assets/images/hero-bg.jpg") center/cover no-repeat;
-    position: relative;
     display: flex;
-    justify-content: center;
     align-items: center;
+    justify-content: center;
     text-align: center;
+    position: relative;
 }
 
 #hero-section .overlay {
@@ -94,22 +94,23 @@ body {
 }
 
 .hero-content h1 {
-    font-size: 56px;
+    font-size: 60px;
     margin-bottom: 20px;
 }
 
 .hero-content h2 {
     font-weight: 400;
-    margin-bottom: 15px;
+    margin-bottom: 20px;
 }
 
 .tagline {
     margin-bottom: 30px;
+    opacity: 0.9;
 }
 
 .cta-button {
     background: linear-gradient(45deg, #2563eb, #38bdf8);
-    padding: 14px 30px;
+    padding: 15px 35px;
     border-radius: 10px;
     text-decoration: none;
     color: white;
@@ -118,14 +119,15 @@ body {
 }
 
 .cta-button:hover {
-    transform: scale(1.07);
+    transform: scale(1.08);
 }
 
 /* ========================================
-   MODE SELECTION SCREEN (FIXED)
+   MODE SELECTION SCREEN
 ======================================== */
 
 #join-screen {
+    position: relative;
     margin-top: 80px;
     min-height: calc(100vh - 80px);
     background: linear-gradient(135deg, #020617, #0b1120);
@@ -134,10 +136,11 @@ body {
     justify-content: center;
     align-items: center;
     gap: 25px;
+    z-index: 10;
 }
 
 .mode-btn {
-    width: 240px;
+    width: 260px;
     padding: 14px;
     border: none;
     border-radius: 12px;
@@ -162,12 +165,12 @@ body {
 
 #main-app {
     margin-top: 80px;
-    min-height: calc(100vh - 80px);
+    height: calc(100vh - 80px);
 }
 
 #app-container {
     display: flex;
-    height: calc(100vh - 80px);
+    height: 100%;
 }
 
 /* ========================================
@@ -205,9 +208,9 @@ body {
 #video-grid {
     flex: 1;
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-    gap: 25px;
-    padding: 30px;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 20px;
+    padding: 25px;
     background: #000;
 }
 
@@ -237,7 +240,7 @@ body {
 }
 
 /* ========================================
-   CHAT SECTION (WHATSAPP STYLE)
+   CHAT SECTION
 ======================================== */
 
 #chat-section {
@@ -359,7 +362,7 @@ body {
 }
 
 .text-only #chat-section {
-    height: calc(100vh - 80px) !important;
+    height: 100% !important;
 }
 
 /* ========================================
