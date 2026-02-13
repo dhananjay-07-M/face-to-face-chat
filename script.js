@@ -21,7 +21,6 @@ let CURRENT_MODE = "";
 let ROOM_ID = "";
 let ROOM_NAME = "";
 let DISPLAY_NAME = "";
-let MAX_USERS = 50;
 
 let peer = null;
 let myPeerId = null;
@@ -29,8 +28,6 @@ let localStream = null;
 
 const connections = {};
 const userNames = {};
-const receivedFiles = {};
-const CHUNK_SIZE = 16000;
 
 function get(id){ return document.getElementById(id); }
 
@@ -82,7 +79,6 @@ async function startRoom(){
 
     myPeerId = "visio_"+Math.random().toString(36).substr(2,9);
 
-    // 🔥 FIXED: use default PeerJS cloud
     peer = new Peer(myPeerId);
 
     const roomRef = database.ref("rooms/"+ROOM_ID);
@@ -103,6 +99,7 @@ async function startRoom(){
             addOnlineUser(user.peerId,user.name);
 
             if(user.peerId!==id){
+
                 connectToPeer(user.peerId);
 
                 if(CURRENT_MODE!=="text"){
@@ -117,6 +114,7 @@ async function startRoom(){
     });
 
     if(CURRENT_MODE!=="text"){
+
         localStream = await navigator.mediaDevices.getUserMedia({
             video:true,
             audio:true
@@ -127,12 +125,19 @@ async function startRoom(){
 
     peer.on("call", call=>{
         call.answer(localStream);
+
         call.on("stream", stream=>{
             addVideoStream(call.peer,stream);
         });
     });
 
-    peer.on("connection", setupDataConnection);
+    peer.on("connection", conn=>{
+        conn.on("open",()=>{
+            connections[conn.peer] = connections[conn.peer] || {};
+            connections[conn.peer].data = conn;
+            setupDataConnection(conn);
+        });
+    });
 }
 
 // =====================================================
@@ -187,6 +192,7 @@ function displayMessage(user,text,mine){
     div.className=mine?"chat-bubble mine":"chat-bubble other";
 
     div.innerHTML=`<b>${mine?"You":user}</b><br>${text}`;
+
     get("messages-container").appendChild(div);
 
     get("messages-container").scrollTop =
@@ -209,22 +215,25 @@ function setupDataConnection(conn){
 
 function connectToPeer(id){
 
-    if(connections[id]) return;
+    if(connections[id]?.data) return;
 
     const conn=peer.connect(id,{reliable:true});
-    connections[id]={data:conn};
 
     conn.on("open",()=>{
-        console.log("Connected to",id);
+        connections[id] = connections[id] || {};
+        connections[id].data = conn;
+        setupDataConnection(conn);
     });
-
-    setupDataConnection(conn);
 }
 
 function callPeer(id){
 
+    if(connections[id]?.media) return;
+
     const call=peer.call(id,localStream);
-    connections[id]={media:call};
+
+    connections[id] = connections[id] || {};
+    connections[id].media = call;
 
     call.on("stream",stream=>{
         addVideoStream(id,stream);
@@ -237,7 +246,9 @@ function callPeer(id){
 
 function broadcast(data){
     Object.values(connections).forEach(c=>{
-        c.data?.send(data);
+        if(c.data && c.data.open){
+            c.data.send(data);
+        }
     });
 }
 
