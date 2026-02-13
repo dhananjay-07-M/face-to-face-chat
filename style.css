@@ -1,5 +1,5 @@
 /* ========================================
-   VISIO - FINAL PREMIUM PROFESSIONAL UI
+   VISIO - FINAL PRODUCTION UI
 ======================================== */
 
 * {
@@ -47,10 +47,10 @@ body {
 .nav-links button {
     color: #fff;
     margin-left: 20px;
+    text-decoration: none;
     background: none;
     border: none;
     cursor: pointer;
-    text-decoration: none;
     transition: 0.3s;
 }
 
@@ -65,7 +65,7 @@ body {
 }
 
 /* ========================================
-   HERO SECTION (HOME FIXED ALIGNMENT)
+   HERO SECTION (HOME PAGE)
 ======================================== */
 
 #hero-section {
@@ -104,7 +104,6 @@ body {
 
 .tagline {
     margin-bottom: 30px;
-    opacity: 0.9;
 }
 
 .cta-button {
@@ -146,48 +145,12 @@ body {
 }
 
 /* ========================================
-   DASHBOARD BACKGROUND
+   DASHBOARD LAYOUT
 ======================================== */
 
 .dashboard-body {
     background: #000;
 }
-
-/* ========================================
-   MODE SELECTION SCREEN
-======================================== */
-
-#join-screen {
-    position: fixed;
-    inset: 0;
-    background: linear-gradient(135deg, #020617, #0b1120);
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    gap: 25px;
-    z-index: 9999;
-}
-
-.mode-btn {
-    width: 240px;
-    padding: 14px;
-    border: none;
-    border-radius: 12px;
-    background: linear-gradient(45deg, #2563eb, #38bdf8);
-    color: white;
-    font-size: 16px;
-    cursor: pointer;
-    transition: 0.3s;
-}
-
-.mode-btn:hover {
-    transform: scale(1.07);
-}
-
-/* ========================================
-   MAIN APP LAYOUT
-======================================== */
 
 #main-app {
     margin-top: 80px;
@@ -266,6 +229,7 @@ body {
 
 #chat-section {
     height: 40%;
+    min-height: 250px;
     background: rgba(15, 23, 42, 0.98);
     display: flex;
     flex-direction: column;
@@ -372,8 +336,17 @@ body {
 }
 
 .text-only #video-grid,
-.text-only .floating-controls {
+.text-only .floating-controls,
+.text-only #sidebar {
     display: none !important;
+}
+
+.text-only #chat-section {
+    height: 100% !important;
+}
+
+.text-only #app-container {
+    height: calc(100vh - 80px);
 }
 
 /* ========================================
