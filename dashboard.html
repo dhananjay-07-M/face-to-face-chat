@@ -10,17 +10,17 @@
 
     <link rel="stylesheet" href="style.css">
 
-    <!-- Firebase -->
-    <script src="https://www.gstatic.com/firebasejs/7.14.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/7.14.0/firebase-database.js"></script>
+    <!-- Firebase (Stable Compat Version) -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
 
     <!-- PeerJS -->
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+
 </head>
 
 <body class="dashboard-body">
 
-<!-- ================= NAVBAR ================= -->
 <nav class="navbar">
     <div class="nav-brand">VISIO</div>
     <div class="nav-links">
@@ -29,38 +29,27 @@
     </div>
 </nav>
 
-<!-- ================= MODE SELECTION ================= -->
+<!-- MODE SCREEN -->
 <div id="join-screen">
     <h2>Select Communication Mode</h2>
 
-    <button class="mode-btn" onclick="startInstant('text')">
-        💬 Text Mode
-    </button>
-
-    <button class="mode-btn" onclick="startInstant('video')">
-        🎥 Video Mode
-    </button>
-
-    <button class="mode-btn" onclick="startInstant('both')">
-        🔥 Hybrid Mode
-    </button>
+    <button class="mode-btn" onclick="startInstant('text')">💬 Text Mode</button>
+    <button class="mode-btn" onclick="startInstant('video')">🎥 Video Mode</button>
+    <button class="mode-btn" onclick="startInstant('both')">🔥 Hybrid Mode</button>
 </div>
 
-<!-- ================= MAIN APPLICATION ================= -->
+<!-- MAIN APP -->
 <div id="main-app" style="display:none;">
 
     <div id="app-container">
 
-        <!-- ===== SIDEBAR ===== -->
         <aside id="sidebar">
             <h3>Participants</h3>
             <div id="online-users-list"></div>
         </aside>
 
-        <!-- ===== MAIN CONTENT ===== -->
         <main id="main-content">
 
-            <!-- ===== VIDEO AREA ===== -->
             <section id="video-grid">
                 <div class="video-wrapper">
                     <video id="local-video" autoplay muted playsinline></video>
@@ -68,16 +57,11 @@
                 </div>
             </section>
 
-            <!-- ===== CHAT AREA ===== -->
             <section id="chat-section">
                 <div id="messages-container"></div>
 
                 <form id="message-form">
-                    <input type="file" id="file-input" hidden>
-                    <button type="button" id="file-btn">📎</button>
-
                     <input type="text" id="message-input" placeholder="Type a message...">
-
                     <button type="submit">➤</button>
                 </form>
             </section>
@@ -85,7 +69,6 @@
         </main>
     </div>
 
-    <!-- ===== FLOATING CONTROLS (Zoom Style) ===== -->
     <div class="floating-controls">
         <button id="mic-toggle" class="ctrl-btn">🎤</button>
         <button id="video-toggle" class="ctrl-btn">📷</button>
@@ -94,7 +77,7 @@
 
 </div>
 
-<script src="script.js"></script>
+<script defer src="script.js"></script>
 
 </body>
 </html>
