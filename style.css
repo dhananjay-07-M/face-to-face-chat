@@ -1,5 +1,5 @@
 /* ========================================
-   VISIO - PREMIUM PROFESSIONAL UI
+   VISIO - FINAL PREMIUM PROFESSIONAL UI
 ======================================== */
 
 * {
@@ -28,7 +28,7 @@ body {
     width: 100%;
     top: 0;
     left: 0;
-    background: rgba(2, 6, 23, 0.9);
+    background: rgba(2, 6, 23, 0.92);
     backdrop-filter: blur(12px);
     padding: 15px 40px;
     display: flex;
@@ -51,6 +51,11 @@ body {
     border: none;
     cursor: pointer;
     text-decoration: none;
+    transition: 0.3s;
+}
+
+.nav-links a:hover {
+    color: #38bdf8;
 }
 
 .cta-nav {
@@ -60,7 +65,96 @@ body {
 }
 
 /* ========================================
-   MODE SELECTION
+   HERO SECTION (HOME FIXED ALIGNMENT)
+======================================== */
+
+#hero-section {
+    padding-top: 80px;
+    min-height: 100vh;
+    background: url("assets/images/hero-bg.jpg") center/cover no-repeat;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+}
+
+#hero-section .overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.65);
+}
+
+.hero-content {
+    position: relative;
+    z-index: 2;
+    max-width: 750px;
+    padding: 20px;
+}
+
+.hero-content h1 {
+    font-size: 56px;
+    margin-bottom: 20px;
+}
+
+.hero-content h2 {
+    font-weight: 400;
+    margin-bottom: 15px;
+}
+
+.tagline {
+    margin-bottom: 30px;
+    opacity: 0.9;
+}
+
+.cta-button {
+    background: linear-gradient(45deg, #2563eb, #38bdf8);
+    padding: 14px 30px;
+    border-radius: 10px;
+    text-decoration: none;
+    color: white;
+    font-weight: 600;
+    transition: 0.3s;
+}
+
+.cta-button:hover {
+    transform: scale(1.07);
+}
+
+/* ========================================
+   CONTENT SECTIONS
+======================================== */
+
+.content-section {
+    padding: 100px 20px;
+    background: #0f172a;
+}
+
+.about-content {
+    max-width: 1100px;
+    margin: auto;
+    display: flex;
+    gap: 40px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.profile-photo {
+    width: 260px;
+    border-radius: 20px;
+    box-shadow: 0 15px 40px rgba(0,0,0,0.6);
+}
+
+/* ========================================
+   DASHBOARD BACKGROUND
+======================================== */
+
+.dashboard-body {
+    background: #000;
+}
+
+/* ========================================
+   MODE SELECTION SCREEN
 ======================================== */
 
 #join-screen {
@@ -72,6 +166,7 @@ body {
     justify-content: center;
     align-items: center;
     gap: 25px;
+    z-index: 9999;
 }
 
 .mode-btn {
@@ -91,38 +186,35 @@ body {
 }
 
 /* ========================================
-   MAIN APP
+   MAIN APP LAYOUT
 ======================================== */
 
 #main-app {
     margin-top: 80px;
+    height: calc(100vh - 80px);
 }
 
 #app-container {
     display: flex;
-    height: calc(100vh - 80px);
+    height: 100%;
 }
 
-/* ========================================
-   SIDEBAR
-======================================== */
+/* SIDEBAR */
 
 #sidebar {
     width: 260px;
     background: rgba(15, 23, 42, 0.95);
-    backdrop-filter: blur(10px);
     padding: 20px;
     border-right: 1px solid rgba(255,255,255,0.05);
+    overflow-y: auto;
 }
 
 #online-users-list p {
-    margin-bottom: 8px;
+    margin-bottom: 10px;
     font-size: 14px;
 }
 
-/* ========================================
-   MAIN CONTENT
-======================================== */
+/* MAIN CONTENT */
 
 #main-content {
     flex: 1;
@@ -132,22 +224,19 @@ body {
 }
 
 /* ========================================
-   VIDEO GRID (Zoom Style)
+   VIDEO GRID (ZOOM STYLE)
 ======================================== */
 
 #video-grid {
     flex: 1;
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-    gap: 20px;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 25px;
     padding: 30px;
     background: #000;
-    align-items: center;
 }
 
 .video-wrapper {
-    position: relative;
-    width: 100%;
     aspect-ratio: 16/9;
     border-radius: 20px;
     overflow: hidden;
@@ -172,7 +261,7 @@ body {
 }
 
 /* ========================================
-   CHAT SECTION (WhatsApp Style)
+   CHAT SECTION (WHATSAPP STYLE)
 ======================================== */
 
 #chat-section {
@@ -207,9 +296,7 @@ body {
     background: #1f2937;
 }
 
-/* ========================================
-   CHAT INPUT
-======================================== */
+/* CHAT INPUT */
 
 #message-form {
     display: flex;
@@ -236,7 +323,7 @@ body {
 }
 
 /* ========================================
-   ZOOM STYLE CONTROL BAR
+   ZOOM CONTROL BAR
 ======================================== */
 
 .floating-controls {
@@ -275,18 +362,11 @@ body {
     background: #dc2626 !important;
 }
 
-.end-call:hover {
-    background: #b91c1c !important;
-}
-
 /* ========================================
    MODE VALIDATION
 ======================================== */
 
-.video-only #chat-section {
-    display: none !important;
-}
-
+.video-only #chat-section,
 .video-only #sidebar {
     display: none !important;
 }
@@ -312,5 +392,9 @@ body {
 
     #chat-section {
         height: 50%;
+    }
+
+    .floating-controls {
+        bottom: 15px;
     }
 }
