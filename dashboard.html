@@ -2,126 +2,77 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>VISIO – Face to Face Communication</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
+    <title>VISIO Dashboard</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-
-    <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/7.14.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/7.14.0/firebase-database.js"></script>
-
-    <!-- PeerJS -->
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 </head>
-<body>
+<body class="dashboard-body">
 
-<!-- NAVBAR -->
-<nav class="navbar">
-    <div class="nav-links">
-        <a href="index.html" class="cta-nav">🏠 Home</a>
+    <nav class="navbar">
+        <div class="nav-links">
+            <a href="index.html" class="cta-nav"><i class="fas fa-home"></i> Home</a>
+        </div>
+        <div class="nav-brand">VISIO</div>
+        <div class="nav-links">
+            <button class="cta-nav exit-btn" onclick="location.reload()"><i class="fas fa-sign-out-alt"></i> Exit</button>
+        </div>
+    </nav>
+
+    <div id="join-screen">
+        <h2>Select Communication Mode</h2>
+        <div class="mode-grid">
+            <button class="mode-btn" onclick="selectMode('text')"><i class="fas fa-comment"></i> Text Group</button>
+            <button class="mode-btn" onclick="selectMode('video')"><i class="fas fa-video"></i> Video Meeting</button>
+            <button class="mode-btn" onclick="selectMode('both')"><i class="fas fa-vr-cardboard"></i> Video + Text</button>
+        </div>
     </div>
-    <div class="nav-brand">VISIO</div>
-    <div class="nav-links">
-        <button class="cta-nav" onclick="leaveRoom()">Exit</button>
+
+    <div id="action-screen" style="display:none;">
+        <h2 id="mode-title"></h2>
+        <button class="room-btn create" onclick="showCreate()">➕ Create New Room</button>
+        <button class="room-btn join" onclick="showJoin()">🔑 Join Existing Room</button>
+        <button class="room-btn back" onclick="backToMode()">← Back</button>
     </div>
-</nav>
 
-<!-- STEP 1: MODE SELECTION -->
-<div id="join-screen">
-    <h2>Welcome to <span style="color:#38bdf8;">VISIO</span></h2>
-    <p>Select Mode</p>
+    <div id="main-app" style="display:none;">
+        <div id="app-container">
+            <aside id="sidebar">
+                <div class="sidebar-header">Participants</div>
+                <div id="online-users-list"></div>
+            </aside>
 
-    <button class="mode-btn" onclick="selectMode('text')">💬 Text Only</button>
-    <button class="mode-btn" onclick="selectMode('video')">🎥 Video Only</button>
-    <button class="mode-btn" onclick="selectMode('both')">🎥💬 Video + Text</button>
-</div>
-
-<!-- STEP 2: CREATE / JOIN -->
-<div id="action-screen" style="display:none;">
-    <h2 id="mode-title"></h2>
-
-    <button class="room-btn create" onclick="showCreate()">➕ Create Room</button>
-    <button class="room-btn join" onclick="showJoin()">🔑 Join Room</button>
-
-    <button class="room-btn back" onclick="backToMode()">← Back</button>
-</div>
-
-<!-- STEP 3A: CREATE ROOM -->
-<div id="create-screen" style="display:none;">
-    <h2>Create Room</h2>
-
-    <input class="room-input" type="text" id="room-name" placeholder="Room Name">
-    <input class="room-input" type="text" id="room-id" placeholder="Room ID (A-Z, 0-9)">
-    <input class="room-input" type="number" id="max-users" placeholder="Max Members (2-20)" min="2" max="20">
-
-    <button class="room-btn create" onclick="createRoom()">Create</button>
-    <button class="room-btn back" onclick="backToAction()">← Back</button>
-</div>
-
-<!-- STEP 3B: JOIN ROOM -->
-<div id="join-room-screen" style="display:none;">
-    <h2>Join Room</h2>
-
-    <input class="room-input" type="text" id="join-room-id" placeholder="Enter Room ID">
-
-    <button class="room-btn join" onclick="joinRoom()">Join</button>
-    <button class="room-btn back" onclick="backToAction()">← Back</button>
-</div>
-
-<!-- MAIN APP -->
-<div id="main-app" style="display:none;">
-
-    <!-- ROOM INFO BAR (Filled by JS) -->
-    <div class="room-info-bar"></div>
-
-    <div id="app-container">
-
-        <aside id="sidebar">
-            <h3>Online Users</h3>
-            <div id="online-users-list"></div>
-        </aside>
-
-        <main id="main-content">
-
-            <div id="video-grid">
-                <div class="video-wrapper">
-                    <video id="local-video" muted autoplay playsinline></video>
-                    <div class="name-label">You</div>
-                    <div class="media-status" id="status-local"></div>
+            <main id="main-content">
+                <div id="video-grid">
+                    <div class="video-wrapper" id="local-video-container">
+                        <video id="local-video" muted autoplay playsinline></video>
+                        <div class="name-label">You</div>
+                    </div>
                 </div>
-            </div>
 
-            <div id="messages-container"></div>
+                <div id="chat-section">
+                    <div id="messages-container"></div>
+                    <form id="message-form">
+                        <input type="file" id="file-input" hidden>
+                        <button type="button" id="file-btn" class="icon-btn"><i class="fas fa-paperclip"></i></button>
+                        <input type="text" id="message-input" placeholder="Type a message...">
+                        <button type="submit" class="icon-btn"><i class="fas fa-paper-plane"></i></button>
+                    </form>
+                </div>
 
-            <form id="message-form">
-                <input type="text" id="message-input" placeholder="Type a message...">
-
-                <input type="file" id="file-input" hidden>
-                <button type="button" id="file-btn" class="control-btn">📎</button>
-
-                <button id="mic-toggle" type="button" class="control-btn">
-                    <i class="fas fa-microphone"></i>
-                </button>
-
-                <button id="video-toggle" type="button" class="control-btn">
-                    <i class="fas fa-video"></i>
-                </button>
-
-                <button type="submit" class="control-btn">
-                    <i class="fas fa-paper-plane"></i>
-                </button>
-
-                <button id="leave-call" type="button" class="control-btn end-call">
-                    <i class="fas fa-phone-slash"></i>
-                </button>
-            </form>
-
-        </main>
+                <div class="floating-controls">
+                    <button id="mic-toggle" class="ctrl-btn"><i class="fas fa-microphone"></i></button>
+                    <button id="video-toggle" class="ctrl-btn"><i class="fas fa-video"></i></button>
+                    <button id="camera-switch" onclick="switchCamera()" class="ctrl-btn"><i class="fas fa-sync"></i></button>
+                    <button id="leave-call" onclick="location.reload()" class="ctrl-btn end-call"><i class="fas fa-phone-slash"></i></button>
+                </div>
+            </main>
+        </div>
     </div>
-</div>
 
-<script src="script.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>
