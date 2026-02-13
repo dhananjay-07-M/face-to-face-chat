@@ -1,14 +1,15 @@
-// ===============================
-// VISIO - COMPLETE UPDATED SCRIPT
-// WhatsApp + Zoom Professional Mode
-// ===============================
+// =====================================================
+// VISIO - FULL ADVANCED PRODUCTION BACKEND
+// Create + Join + Video + Chat + File + Media Sync
+// =====================================================
 
+// ---------------- FIREBASE ----------------
 const firebaseConfig = {
     apiKey: "AIzaSyDkrzN0604XsYRipUbPF9iiLXy8aaOji3o",
     authDomain: "dhananjay-chat-app.firebaseapp.com",
     databaseURL: "https://dhananjay-chat-app-default-rtdb.firebaseio.com",
     projectId: "dhananjay-chat-app",
-    storageBucket: "dhananjay-chat-app.firebasestorage.app",
+    storageBucket: "dhananjay-chat-app.appspot.com",
     messagingSenderId: "319061629483",
     appId: "1:319061629483:web:6c2d52351a764662a6286e"
 };
@@ -16,8 +17,7 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const database = firebase.database();
 
-// ================= GLOBAL STATE =================
-
+// ---------------- GLOBAL STATE ----------------
 let CURRENT_MODE = "";
 let ROOM_ID = "";
 let ROOM_NAME = "";
@@ -25,34 +25,22 @@ let MAX_USERS = 0;
 let DISPLAY_NAME = "";
 let CREATOR_ID = "";
 
-let peer, myPeerId, localStream;
+let peer = null;
+let myPeerId = null;
+let localStream = null;
+let currentCamera = "user";
+
 const connections = {};
 const userNames = {};
 const receivedFiles = {};
 const CHUNK_SIZE = 16000;
 
-// ================= UI ELEMENTS =================
+// ---------------- SAFE GET ----------------
+function get(id) {
+    return document.getElementById(id);
+}
 
-const joinScreen = document.getElementById("join-screen");
-const actionScreen = document.getElementById("action-screen");
-const createScreen = document.getElementById("create-screen");
-const joinRoomScreen = document.getElementById("join-room-screen");
-const mainApp = document.getElementById("main-app");
-
-const videoGrid = document.getElementById("video-grid");
-const onlineUsersList = document.getElementById("online-users-list");
-const messagesContainer = document.getElementById("messages-container");
-const messageForm = document.getElementById("message-form");
-const messageInput = document.getElementById("message-input");
-const micToggle = document.getElementById("mic-toggle");
-const videoToggle = document.getElementById("video-toggle");
-const leaveCall = document.getElementById("leave-call");
-
-const fileInput = document.getElementById("file-input");
-const fileBtn = document.getElementById("file-btn");
-
-// ================= USERNAME =================
-
+// ---------------- USERNAME ----------------
 function getValidUsername() {
     const regex = /^[A-Za-z0-9 ]{1,15}$/;
     while (true) {
@@ -64,39 +52,60 @@ function getValidUsername() {
     }
 }
 
-// ================= MODE =================
-
-function selectMode(mode) {
+// ---------------- MODE ----------------
+window.selectMode = function(mode) {
     CURRENT_MODE = mode;
-    joinScreen.style.display = "none";
-    actionScreen.style.display = "flex";
+    get("join-screen").style.display = "none";
+    get("action-screen").style.display = "flex";
 
-    document.getElementById("mode-title").innerText =
+    get("mode-title").innerText =
         mode === "text" ? "TEXT CHAT ROOM" :
         mode === "video" ? "VIDEO CALL ROOM" :
         "VIDEO + TEXT ROOM";
-}
+};
 
-function applyModeUI() {
-    document.body.classList.remove("text-only", "video-only");
+// ---------------- CREATE ROOM ----------------
+window.createRoom = function() {
+    ROOM_NAME = get("room-name").value.trim();
+    ROOM_ID = get("room-id").value.trim();
+    MAX_USERS = parseInt(get("max-users").value);
 
-    if (CURRENT_MODE === "text")
-        document.body.classList.add("text-only");
+    if (!ROOM_NAME || ROOM_NAME.length < 3)
+        return alert("Room name too short");
 
-    if (CURRENT_MODE === "video")
-        document.body.classList.add("video-only");
-}
+    if (!ROOM_ID || !/^[A-Za-z0-9]+$/.test(ROOM_ID))
+        return alert("Room ID only letters & numbers");
 
-// ================= START ROOM =================
+    if (!MAX_USERS || MAX_USERS < 2 || MAX_USERS > 20)
+        return alert("Max users must be 2-20");
 
-function startRoom(isCreator) {
+    startRoom(true);
+};
+
+// ---------------- JOIN ROOM ----------------
+window.joinRoom = function() {
+    ROOM_ID = get("join-room-id").value.trim();
+
+    if (!ROOM_ID || !/^[A-Za-z0-9]+$/.test(ROOM_ID))
+        return alert("Invalid Room ID");
+
+    startRoom(false);
+};
+
+// ---------------- START ROOM ----------------
+async function startRoom(isCreator) {
 
     DISPLAY_NAME = getValidUsername();
-    mainApp.style.display = "block";
-    applyModeUI();
+    get("action-screen").style.display = "none";
+    get("main-app").style.display = "block";
 
     myPeerId = "visio_" + Math.random().toString(36).substr(2, 9);
-    peer = new Peer(myPeerId);
+
+    peer = new Peer(myPeerId, {
+        host: "peerjs-server.herokuapp.com",
+        secure: true,
+        port: 443
+    });
 
     const roomRef = database.ref("rooms/" + ROOM_ID);
 
@@ -164,24 +173,23 @@ function startRoom(isCreator) {
             });
 
             roomRef.child("users").on("child_removed", snap => {
-                const user = snap.val();
-                removeOnlineUser(user.peerId);
+                removeOnlineUser(snap.val().peerId);
             });
 
-            document.title = "VISIO | " + ROOM_NAME;
+            setupRoomHeader();
         });
     });
 
     if (CURRENT_MODE !== "text") {
-        navigator.mediaDevices.getUserMedia({ video: true, audio: true })
-            .then(stream => {
-                localStream = stream;
-                document.getElementById("local-video").srcObject = stream;
-            });
+        localStream = await navigator.mediaDevices.getUserMedia({
+            video: true,
+            audio: true
+        });
+
+        get("local-video").srcObject = localStream;
     }
 
     peer.on("call", call => {
-        if (CURRENT_MODE === "text") return;
         call.answer(localStream);
         call.on("stream", stream => addVideoStream(call.peer, stream));
     });
@@ -189,11 +197,21 @@ function startRoom(isCreator) {
     peer.on("connection", setupDataConnection);
 }
 
-// ================= VIDEO =================
+// ---------------- ROOM HEADER ----------------
+function setupRoomHeader() {
+    const bar = document.createElement("div");
+    bar.className = "room-info-bar";
+    bar.innerHTML = `
+        <span>Room: ${ROOM_NAME}</span>
+        <span>ID: ${ROOM_ID}</span>
+        <span>${myPeerId === CREATOR_ID ? "👑 Creator" : "Member"}</span>
+    `;
+    document.body.insertBefore(bar, get("app-container"));
+}
 
+// ---------------- VIDEO ----------------
 function addVideoStream(peerId, stream) {
-
-    if (document.getElementById("wrap-" + peerId)) return;
+    if (get("wrap-" + peerId)) return;
 
     const wrapper = document.createElement("div");
     wrapper.className = "video-wrapper";
@@ -204,73 +222,12 @@ function addVideoStream(peerId, stream) {
     video.autoplay = true;
     video.playsInline = true;
 
-    const name = document.createElement("div");
-    name.className = "name-label";
-    name.innerText = userNames[peerId] || "User";
-
-    const status = document.createElement("div");
-    status.className = "media-status";
-    status.id = "status-" + peerId;
-
-    wrapper.append(video, name, status);
-    videoGrid.appendChild(wrapper);
+    wrapper.appendChild(video);
+    get("video-grid").appendChild(wrapper);
 }
 
-// ================= MEDIA TOGGLE =================
-
-function broadcastStatus() {
-    if (!localStream) return;
-
-    const mic = localStream.getAudioTracks()[0].enabled;
-    const cam = localStream.getVideoTracks()[0].enabled;
-
-    Object.values(connections).forEach(c =>
-        c.data?.send({ type: "media_status", peerId: myPeerId, mic, cam })
-    );
-}
-
-micToggle.onclick = () => {
-    const track = localStream.getAudioTracks()[0];
-    track.enabled = !track.enabled;
-
-    micToggle.innerHTML =
-        track.enabled ? '<i class="fas fa-microphone"></i>'
-        : '<i class="fas fa-microphone-slash"></i>';
-
-    broadcastStatus();
-};
-
-videoToggle.onclick = () => {
-    const track = localStream.getVideoTracks()[0];
-    track.enabled = !track.enabled;
-
-    videoToggle.innerHTML =
-        track.enabled ? '<i class="fas fa-video"></i>'
-        : '<i class="fas fa-video-slash"></i>';
-
-    broadcastStatus();
-};
-
-// ================= ONLINE USERS =================
-
-function addOnlineUser(id, name) {
-    if (document.getElementById("user-" + id)) return;
-
-    const p = document.createElement("p");
-    p.id = "user-" + id;
-    p.innerText = "🟢 " + name;
-    onlineUsersList.appendChild(p);
-}
-
-function removeOnlineUser(id) {
-    const el = document.getElementById("user-" + id);
-    if (el) el.remove();
-}
-
-// ================= CHAT =================
-
+// ---------------- CHAT ----------------
 function displayMessage(user, text, mine) {
-
     const div = document.createElement("div");
     div.className = mine ? "chat-bubble mine" : "chat-bubble other";
 
@@ -285,50 +242,66 @@ function displayMessage(user, text, mine) {
         <div class="bubble-time">${time}</div>
     `;
 
-    messagesContainer.appendChild(div);
-    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    get("messages-container").appendChild(div);
+    get("messages-container").scrollTop =
+        get("messages-container").scrollHeight;
 }
 
-messageForm.onsubmit = e => {
+// ---------------- FILE & IMAGE ----------------
+get("file-btn")?.addEventListener("click", () => {
+    get("file-input").click();
+});
 
-    e.preventDefault();
+get("file-input")?.addEventListener("change", e => {
+    const file = e.target.files[0];
+    if (!file) return;
 
-    if (CURRENT_MODE === "video") {
-        alert("Chat disabled in Video Only mode");
-        return;
+    if (file.type.startsWith("image/")) {
+        const reader = new FileReader();
+        reader.onload = ev => {
+            broadcast({ type: "image", user: DISPLAY_NAME, data: ev.target.result });
+            displayMessage(DISPLAY_NAME, "[Image]", true);
+        };
+        reader.readAsDataURL(file);
+    } else {
+        sendFile(file);
+    }
+});
+
+// ---------------- FILE CHUNK SYSTEM ----------------
+function sendFile(file) {
+
+    broadcast({
+        type: "file_meta",
+        name: file.name,
+        size: file.size,
+        mime: file.type,
+        peerId: myPeerId
+    });
+
+    const reader = new FileReader();
+    let offset = 0;
+
+    reader.onload = e => {
+        broadcast({
+            type: "file_chunk",
+            peerId: myPeerId,
+            chunk: e.target.result
+        });
+
+        offset += e.target.result.byteLength;
+        if (offset < file.size) readNext();
+    };
+
+    function readNext() {
+        const slice = file.slice(offset, offset + CHUNK_SIZE);
+        reader.readAsArrayBuffer(slice);
     }
 
-    const msg = messageInput.value.trim();
-    if (!msg) return;
-
-    displayMessage(DISPLAY_NAME, msg, true);
-
-    Object.values(connections).forEach(c =>
-        c.data?.send({ type: "chat", user: DISPLAY_NAME, text: msg })
-    );
-
-    messageInput.value = "";
-};
-
-// ================= CONNECTION =================
-
-function callPeer(id) {
-    if (connections[id]?.media) return;
-
-    const call = peer.call(id, localStream);
-    connections[id] = { media: call };
-
-    call.on("stream", stream => addVideoStream(id, stream));
+    readNext();
 }
 
-function connectToPeer(id) {
-    if (connections[id]?.data) return;
-
-    const conn = peer.connect(id, { reliable: true });
-    connections[id] = { ...connections[id], data: conn };
-    setupDataConnection(conn);
-}
-
+// ---------------- DATA CONNECTION ----------------
 function setupDataConnection(conn) {
 
     conn.on("data", data => {
@@ -336,27 +309,67 @@ function setupDataConnection(conn) {
         if (data.type === "chat")
             displayMessage(data.user, data.text, false);
 
+        if (data.type === "image")
+            displayMessage(data.user, "[Image]", false);
+
+        if (data.type === "file_meta")
+            receivedFiles[data.peerId] = { ...data, chunks: [], received: 0 };
+
+        if (data.type === "file_chunk") {
+            const file = receivedFiles[data.peerId];
+            file.chunks.push(data.chunk);
+            file.received += data.chunk.byteLength;
+
+            if (file.received >= file.size) {
+                const blob = new Blob(file.chunks, { type: file.mime });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = file.name;
+                a.textContent = "Download " + file.name;
+                get("messages-container").appendChild(a);
+            }
+        }
+
         if (data.type === "media_status")
             updateMediaStatus(data.peerId, data.mic, data.cam);
     });
 }
 
-// ================= MEDIA STATUS =================
+// ---------------- MEDIA STATUS ----------------
+function broadcastStatus() {
+    const mic = localStream.getAudioTracks()[0].enabled;
+    const cam = localStream.getVideoTracks()[0].enabled;
+    broadcast({ type: "media_status", peerId: myPeerId, mic, cam });
+}
 
 function updateMediaStatus(peerId, mic, cam) {
-
-    const status = document.getElementById("status-" + peerId);
+    const status = get("status-" + peerId);
     if (!status) return;
-
-    status.innerHTML =
-        `${!mic ? "🎤❌" : ""} ${!cam ? "📷❌" : ""}`;
+    status.innerHTML = `${!mic ? "🎤❌" : ""} ${!cam ? "📷❌" : ""}`;
 }
 
-// ================= EXIT =================
+// ---------------- BROADCAST ----------------
+function broadcast(data) {
+    Object.values(connections).forEach(c =>
+        c.data?.send(data)
+    );
+}
 
-function leaveRoom() {
-    if (peer) peer.destroy();
+// ---------------- ONLINE USERS ----------------
+function addOnlineUser(id, name) {
+    const p = document.createElement("p");
+    p.id = "user-" + id;
+    p.innerText = "🟢 " + name;
+    get("online-users-list").appendChild(p);
+}
+
+function removeOnlineUser(id) {
+    get("user-" + id)?.remove();
+}
+
+// ---------------- EXIT ----------------
+get("leave-call")?.addEventListener("click", () => {
+    peer?.destroy();
     location.reload();
-}
-
-leaveCall.onclick = leaveRoom;
+});
